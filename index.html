@@ -33,21 +33,72 @@
     </div>
   </section>
 
-  <!-- App Shell -->
+  <!-- Header -->
   <header class="app-header" id="appHeader" hidden>
     <div class="brand">Avatly</div>
-    <nav class="tabs">
-      <button class="tab active" data-tab="wardrobe">Guardaroba</button>
-      <button class="tab" data-tab="outfit">Outfit AI</button>
-      <button class="tab" data-tab="weather">Meteo</button>
-      <button class="tab" data-tab="planner">Planner</button>
+    <!-- (tabs nascosti su mobile; la bottom bar è la navigazione principale) -->
+    <nav class="tabs" aria-hidden="true">
+      <button class="tab active" data-tab="outfit">Home</button>
+      <button class="tab" data-tab="avatar">Avatar</button>
+      <button class="tab" data-tab="wardrobe">Guardaroba</button>
+      <button class="tab" data-tab="planner">Calendario</button>
+      <button class="tab" data-tab="armocromia">Armocromia</button>
       <button class="tab" data-tab="settings">Impostazioni</button>
     </nav>
+
+    <!-- Bolla meteo -->
+    <div id="wxBubble" class="wx-bubble" hidden>
+      <span id="wxEmoji">☀️</span>
+      <span id="wxTemp">--°</span>
+    </div>
   </header>
 
   <main id="appMain" hidden>
+    <!-- HOME = Outfit AI -->
+    <section id="outfit" class="panel active">
+      <div class="card">
+        <h3>Outfit del giorno</h3>
+        <div id="aiHint" class="muted small">
+          Aggiungi qualche capo e attiva il meteo per consigli più precisi.
+        </div>
+        <div class="inline" style="margin:8px 0">
+          <button class="btn" id="useGPS">Usa la mia posizione</button>
+          <input id="cityInput" placeholder="Città (es. Roma, IT)"/>
+          <button class="btn" id="setCity">Imposta</button>
+        </div>
+        <button class="btn primary" id="genOutfitsBtn">Genera 3 outfit</button>
+        <div id="outfitList" class="grid-cards" style="margin-top:10px"></div>
+        <button class="btn" id="exportOutfitBtn">Esporta outfit come immagine</button>
+        <canvas id="exportCanvas" width="1200" height="1400" style="display:none"></canvas>
+      </div>
+    </section>
+
+    <!-- Avatar -->
+    <section id="avatar" class="panel">
+      <div class="card">
+        <h3>Il tuo Avatar</h3>
+        <div class="inline">
+          <div style="flex:1">
+            <label>Altezza (cm)</label>
+            <input id="avatarHeight" type="number" placeholder="es. 165">
+          </div>
+          <div style="flex:1">
+            <label>Peso (kg)</label>
+            <input id="avatarWeight" type="number" placeholder="es. 55">
+          </div>
+        </div>
+        <div class="inline" style="margin-top:10px">
+          <button class="btn primary" id="openAvatarCreator">Crea / Modifica avatar 3D</button>
+          <button class="btn" id="saveAvatarMeasures">Salva misure</button>
+        </div>
+        <div id="avatarPreview" class="avatar-preview muted small" style="margin-top:10px">
+          Nessun avatar salvato.
+        </div>
+      </div>
+    </section>
+
     <!-- Guardaroba -->
-    <section id="wardrobe" class="panel active">
+    <section id="wardrobe" class="panel">
       <div class="grid-2">
         <div class="card">
           <h3>Aggiungi capo</h3>
@@ -65,7 +116,7 @@
         </div>
 
         <div class="card">
-          <h3>Filtri</h3>
+          <h3>Filtri rapidi</h3>
           <div class="filters">
             <aside class="filter-col">
               <div class="filter-title">Categorie</div>
@@ -85,31 +136,6 @@
       </div>
     </section>
 
-    <!-- Outfit AI -->
-    <section id="outfit" class="panel">
-      <div class="card">
-        <h3>Suggerimenti di oggi</h3>
-        <div id="aiHint" class="muted small">Aggiungi qualche capo e attiva il meteo per consigli più precisi.</div>
-        <button class="btn primary" id="genOutfitsBtn">Genera 3 outfit</button>
-        <div id="outfitList" class="grid-cards"></div>
-        <button class="btn" id="exportOutfitBtn">Esporta outfit come immagine</button>
-        <canvas id="exportCanvas" width="1200" height="1400" style="display:none"></canvas>
-      </div>
-    </section>
-
-    <!-- Meteo -->
-    <section id="weather" class="panel">
-      <div class="card">
-        <h3>Meteo</h3>
-        <div class="inline">
-          <button class="btn" id="useGPS">Usa la mia posizione</button>
-          <input id="cityInput" placeholder="Città (es. Roma, IT)"/>
-          <button class="btn" id="setCity">Imposta</button>
-        </div>
-        <div id="wxBox" class="muted small">Nessun dato meteo.</div>
-      </div>
-    </section>
-
     <!-- Planner -->
     <section id="planner" class="panel">
       <div class="card">
@@ -121,18 +147,21 @@
       </div>
     </section>
 
+    <!-- Armocromia -->
+    <section id="armocromia" class="panel">
+      <div class="card">
+        <h3>Armocromia</h3>
+        <p class="muted">Anteprima: qui salverai la tua palette e i suggerimenti per abbinamenti.</p>
+      </div>
+    </section>
+
     <!-- Impostazioni -->
     <section id="settings" class="panel">
       <div class="card">
         <h3>Profilo</h3>
         <label>Nome profilo</label>
         <input id="profileName" placeholder="Es. Marta"/>
-        <label>Tema</label>
-        <div class="inline">
-          <button class="btn" data-theme="lavanda">Lavanda (vecchio)</button>
-          <button class="btn" data-theme="monelia">Rosa Monélia (solo prova)</button>
-        </div>
-        <div class="inline">
+        <div class="inline" style="margin-top:8px">
           <button class="btn primary" id="saveProfile">Salva</button>
           <button class="btn" id="logout">Esci</button>
         </div>
@@ -145,44 +174,39 @@
       </div>
       <div class="card">
         <h3>Note roadmap</h3>
-        <p class="small muted">Avatar realistico & Armocromia nella v1.5 (premium).</p>
+        <p class="small muted">Avatar realistico & Try-On AI nella v1.5 (premium).</p>
       </div>
     </section>
   </main>
 
-  <!-- Action sheet long-press -->
-  <div id="lpOverlay" style="display:none;"></div>
-  <div id="lpSheet" class="sheet" style="display:none;">
-    <div id="lpThumb" class="thumb"></div>
-    <div id="lpTitle" class="title"></div>
-    <div id="lpDetails" class="details"></div>
-    <div class="actions">
-      <button id="lpEditBtn">Modifica</button>
-      <button id="lpMoveBtn">Sposta categoria</button>
-      <button id="lpDeleteBtn" class="danger">Elimina</button>
-      <button id="lpCloseBtn" class="ghost">Chiudi</button>
+  <!-- Bottom navigation -->
+  <nav class="bottom-nav" id="bottomNav" hidden>
+    <button data-go="outfit" class="bnav active" title="Home">🏠<span>Home</span></button>
+    <button data-go="avatar" class="bnav" title="Avatar">🧍‍♀️<span>Avatar</span></button>
+    <button data-go="wardrobe" class="bnav" title="Guardaroba">👗<span>Vestiti</span></button>
+    <button data-go="planner" class="bnav" title="Calendario">📅<span>Planner</span></button>
+    <button data-go="armocromia" class="bnav" title="Armocromia">🎨<span>Colori</span></button>
+    <button data-go="settings" class="bnav" title="Impostazioni">⚙️<span>Impost.</span></button>
+  </nav>
+
+  <!-- Toast / mini-messaggi -->
+  <div id="toast" class="toast" hidden></div>
+
+  <!-- Modale Creator Avatar (Ready Player Me) -->
+  <div id="rpmModal" class="modal" style="display:none">
+    <div class="modal-inner">
+      <div class="modal-bar">
+        <strong>Creator Avatar</strong>
+        <button class="icon-btn" id="closeRpm">✕</button>
+      </div>
+      <!-- Demo Hosted Creator Ready Player Me con Frame API -->
+      <iframe id="rpmFrame" allow="camera *; microphone *"
+        src="https://demo.readyplayer.me/avatar?frameApi=true"
+        style="width:100%;height:100%;border:0;border-radius:0 0 14px 14px"></iframe>
     </div>
   </div>
 
-  <!-- Edit sheet -->
-  <div id="editSheet" class="sheet" style="display:none;">
-    <h3>Modifica capo</h3>
-    <label>Categoria
-      <select id="editCategory"></select>
-    </label>
-    <label>Colore/Dettagli
-      <input id="editColor" placeholder="es. bianca, ricamata"/>
-    </label>
-    <label>Nuova foto (opzionale)
-      <input id="editPhoto" type="file" accept="image/*"/>
-    </label>
-    <div class="actions">
-      <button id="saveEditBtn">Salva</button>
-      <button id="cancelEditBtn" class="ghost">Annulla</button>
-    </div>
-  </div>
-
-  <footer class="app-footer" id="appFooter" hidden>© 2025 Avatly – prototipo v0.1</footer>
+  <footer class="app-footer" id="appFooter" hidden>© 2025 Avatly – v0.3</footer>
   <script src="app.js"></script>
 </body>
 </html>
