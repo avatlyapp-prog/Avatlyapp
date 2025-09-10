@@ -1,7 +1,13 @@
 // Avatly v0.1 – client-only PWA (mock login + local storage).
 // In v1.0: auth Apple/Google/Email reali + cloud.
 
-const $ = s => document.querySelector(s);
+const $ = s => // Nascondi splash iniziale dopo 2.5 secondi
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const splash = document.getElementById("introSplash");
+    if (splash) splash.style.display = "none";
+  }, 2500);
+}); document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
 const DB = {
