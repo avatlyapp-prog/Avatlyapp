@@ -1,15 +1,179 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Avatly – Guardaroba & Outfit</title>
-  <link rel="manifest" href="manifest.webmanifest">
-  <link rel="stylesheet" href="styles.css">
+  <meta name="theme-color" content="#A583C4"/>
+  <link rel="manifest" href="manifest.webmanifest"/>
+  <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <h1>Benvenuta in Avatly</h1>
-  <p>App demo: carica capi, genera outfit e usa il meteo.</p>
+  <!-- Splash / Login -->
+  <section id="splash" class="center full">
+    <div class="logo">Avatly</div>
+    <div class="card login">
+      <h2>Accedi</h2>
+      <button class="btn ghost" id="loginApple"> Continua con Apple (demo)</button>
+      <button class="btn ghost" id="loginGoogle">Continue with Google (demo)</button>
+      <div class="or">oppure</div>
+      <input id="email" placeholder="Email"/>
+      <input id="password" placeholder="Password" type="password"/>
+      <button class="btn primary" id="loginEmail">Accedi</button>
+      <p class="small muted">* Login demo locale. In v1.0 collegheremo Apple/Google reali e salvataggio cloud.</p>
+    </div>
+  </section>
+
+  <!-- App Shell -->
+  <header class="app-header" id="appHeader" hidden>
+    <div class="brand">Avatly</div>
+    <nav class="tabs">
+      <button class="tab active" data-tab="wardrobe">Guardaroba</button>
+      <button class="tab" data-tab="outfit">Outfit AI</button>
+      <button class="tab" data-tab="weather">Meteo</button>
+      <button class="tab" data-tab="planner">Planner</button>
+      <button class="tab" data-tab="settings">Impostazioni</button>
+    </nav>
+  </header>
+
+  <main id="appMain" hidden>
+    <!-- Guardaroba -->
+    <section id="wardrobe" class="panel active">
+      <div class="grid-2">
+        <div class="card">
+          <h3>Aggiungi capo</h3>
+          <label>Categoria</label>
+          <div class="inline">
+            <select id="newCategory"></select>
+            <button class="btn" id="addCatBtn">+ nuova</button>
+          </div>
+          <label>Colore/Dettagli</label>
+          <input id="newColor" placeholder="es. bianca, ricamata"/>
+          <label>Foto (opzionale)</label>
+          <input id="newPhoto" type="file" accept="image/*"/>
+          <button class="btn primary" id="addItemBtn">Aggiungi al guardaroba</button>
+          <p class="small muted">Tieni premuto su un capo per dettagli, modifica, sposta categoria o eliminare.</p>
+        </div>
+
+        <div class="card">
+          <h3>Filtri</h3>
+          <div class="filters">
+            <aside class="filter-col">
+              <div class="filter-title">Categorie</div>
+              <div id="catList"></div>
+            </aside>
+            <div class="filter-body">
+              <input id="searchTxt" placeholder="Cerca per colore/dettagli"/>
+              <button class="btn" id="clearFilters">Pulisci filtri</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Il tuo guardaroba</h3>
+        <div id="itemsGrid" class="grid-cards"></div>
+      </div>
+    </section>
+
+    <!-- Outfit AI -->
+    <section id="outfit" class="panel">
+      <div class="card">
+        <h3>Suggerimenti di oggi</h3>
+        <div id="aiHint" class="muted small">Aggiungi qualche capo e attiva il meteo per consigli più precisi.</div>
+        <button class="btn primary" id="genOutfitsBtn">Genera 3 outfit</button>
+        <div id="outfitList" class="grid-cards"></div>
+        <button class="btn" id="exportOutfitBtn">Esporta outfit come immagine</button>
+        <canvas id="exportCanvas" width="1200" height="1400" style="display:none"></canvas>
+      </div>
+    </section>
+
+    <!-- Meteo -->
+    <section id="weather" class="panel">
+      <div class="card">
+        <h3>Meteo</h3>
+        <div class="inline">
+          <button class="btn" id="useGPS">Usa la mia posizione</button>
+          <input id="cityInput" placeholder="Città (es. Roma, IT)"/>
+          <button class="btn" id="setCity">Imposta</button>
+        </div>
+        <div id="wxBox" class="muted small">Nessun dato meteo.</div>
+      </div>
+    </section>
+
+    <!-- Planner -->
+    <section id="planner" class="panel">
+      <div class="card">
+        <h3>Planner settimanale</h3>
+        <div id="planGrid" class="plan-grid"></div>
+        <div class="inline">
+          <button class="btn" id="shareReminders">Esporta su Promemoria (testo)</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Impostazioni -->
+    <section id="settings" class="panel">
+      <div class="card">
+        <h3>Profilo</h3>
+        <label>Nome profilo</label>
+        <input id="profileName" placeholder="Es. Marta"/>
+        <label>Tema</label>
+        <div class="inline">
+          <button class="btn" data-theme="lavanda">Lavanda</button>
+          <button class="btn" data-theme="monelia">Rosa Monélia</button>
+        </div>
+        <div class="inline">
+          <button class="btn primary" id="saveProfile">Salva</button>
+          <button class="btn" id="logout">Esci</button>
+        </div>
+      </div>
+      <div class="card">
+        <h3>Backup</h3>
+        <button class="btn" id="exportData">Esporta dati (.json)</button>
+        <input type="file" id="importData" accept="application/json" hidden/>
+        <button class="btn" id="importBtn">Importa dati</button>
+      </div>
+      <div class="card">
+        <h3>Note roadmap</h3>
+        <p class="small muted">Avatar realistico & Armocromia nella v1.5 (premium).</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Long-press Action Sheet -->
+  <div id="lpOverlay" style="display:none;"></div>
+  <div id="lpSheet" class="sheet" style="display:none;">
+    <div id="lpThumb" class="thumb"></div>
+    <div id="lpTitle" class="title"></div>
+    <div id="lpDetails" class="details"></div>
+    <div class="actions">
+      <button id="lpEditBtn">Modifica</button>
+      <button id="lpMoveBtn">Sposta categoria</button>
+      <button id="lpDeleteBtn" class="danger">Elimina</button>
+      <button id="lpCloseBtn" class="ghost">Chiudi</button>
+    </div>
+  </div>
+
+  <!-- Edit Sheet -->
+  <div id="editSheet" class="sheet" style="display:none;">
+    <h3>Modifica capo</h3>
+    <label>Categoria
+      <select id="editCategory"></select>
+    </label>
+    <label>Colore/Dettagli
+      <input id="editColor" placeholder="es. bianca, ricamata"/>
+    </label>
+    <label>Nuova foto (opzionale)
+      <input id="editPhoto" type="file" accept="image/*"/>
+    </label>
+    <div class="actions">
+      <button id="saveEditBtn">Salva</button>
+      <button id="cancelEditBtn" class="ghost">Annulla</button>
+    </div>
+  </div>
+
+  <footer class="app-footer" id="appFooter" hidden>© 2025 Avatly – prototipo v0.1</footer>
   <script src="app.js"></script>
 </body>
 </html>
