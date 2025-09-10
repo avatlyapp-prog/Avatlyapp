@@ -56,3 +56,27 @@ main{padding:14px;max-width:1100px;margin:0 auto}
 
 /* Tema Monélia */
 .theme-monelia{--lavanda:var(--rose);--bg:#fff7fb;--ink:#442031}
+/* Splash screen iniziale */
+.intro-splash {
+  position: fixed;
+  inset: 0;
+  background: var(--lavanda); /* oppure rosa se usi tema monelia */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeOut 2.5s forwards;
+}
+
+.intro-logo {
+  font-size: 56px;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 2px;
+}
+
+@keyframes fadeOut {
+  0% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { opacity: 0; visibility: hidden; }
+}
