@@ -3,16 +3,16 @@
   "short_name": "Avatly",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FBF8FF",
-  "theme_color": "#A583C4",
+  "background_color": "#5B2A3F",
+  "theme_color": "#5B2A3F",
   "icons": [
     {
-      "src": "assets/icon-192.png",
+      "src": "assets/icon-192-bordeaux-bg.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "assets/icon-512.png",
+      "src": "assets/icon-512-bordeaux-bg.png",
       "sizes": "512x512",
       "type": "image/png"
     }
