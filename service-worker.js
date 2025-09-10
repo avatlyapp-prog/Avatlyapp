@@ -1,12 +1,13 @@
-const CACHE_NAME='avatly-v01';
+// bump cache name per forzare aggiornamento
+const CACHE_NAME='avatly-v02';
 const ASSETS=[
   './',
   './index.html',
   './styles.css',
   './app.js',
   './manifest.webmanifest',
-  './assets/icon-192.png',
-  './assets/icon-512.png'
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install',e=>{
