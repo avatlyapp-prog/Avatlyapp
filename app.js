@@ -1,31 +1,31 @@
-// Avatly v0.1 – client-only PWA (mock login + local storage).
-// In v1.0: auth Apple/Google/Email reali + cloud.
+// Avatly v0.1 – PWA client-only (login mock). In v1: auth Apple/Google/Email reali + cloud.
 
-const $ = s => // Nascondi splash iniziale dopo 2.5 secondi
-window.addEventListener("load", () => {
-  setTimeout(() => {
-    const splash = document.getElementById("introSplash");
-    if (splash) splash.style.display = "none";
-  }, 2500);
-}); document.querySelector(s);
+const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
 const DB = {
   user: JSON.parse(localStorage.getItem('av_user') || 'null'),
   items: JSON.parse(localStorage.getItem('av_items') || '[]'),
   categories: JSON.parse(localStorage.getItem('av_categories') || '["top","bottom","dress","outerwear","shoes","bag","accessories"]'),
-  plan: JSON.parse(localStorage.getItem('av_plan') || '{}'), // { 'YYYY-MM-DD': [itemIds] }
-  settings: JSON.parse(localStorage.getItem('av_settings') || '{"profileName":"","theme":"lavanda"}'),
+  plan: JSON.parse(localStorage.getItem('av_plan') || '{}'),
+  settings: JSON.parse(localStorage.getItem('av_settings') || '{"profileName":"","theme":"monelia"}'),
   weather: null
 };
 function save(k){ localStorage.setItem('av_'+k, JSON.stringify(DB[k])); }
 
-// ---------- LOGIN (mock) ----------
+// ——— Splash: nasconde dopo 2.5s
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    const s = document.getElementById("introSplash");
+    if (s) s.style.display = "none";
+  }, 2500);
+});
+
+// ——— LOGIN (mock)
 function showApp(){
   $('#splash').hidden = true;
   $('#appHeader').hidden = false; $('#appMain').hidden = false; $('#appFooter').hidden = false;
-  renderCategories(); renderItems(); renderFilters(); renderPlanner();
-  applyTheme(DB.settings.theme || 'lavanda');
+  renderCategories(); renderItems(); renderPlanner(); renderWeather();
 }
 function loginMock(type){
   DB.user = { id: crypto.randomUUID(), provider:type, email: $('#email')?.value || '' };
@@ -39,13 +39,13 @@ $('#loginEmail')?.addEventListener('click', ()=>{
   loginMock('email');
 });
 
-// ---------- Tabs ----------
+// ——— Tabs
 $$('.tab').forEach(b=>b?.addEventListener('click', ()=>{
   $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
   $$('.panel').forEach(p=>p.classList.remove('active')); $('#'+b.dataset.tab).classList.add('active');
 }));
 
-// ---------- Categories ----------
+// ——— Categories
 function renderCategories(){
   const sel = $('#newCategory'); sel.innerHTML = '';
   DB.categories.forEach(c=> sel.innerHTML += `<option value="${c}">${c}</option>`);
@@ -54,8 +54,10 @@ function renderCategories(){
     DB.categories.forEach(c=> editSel.innerHTML += `<option value="${c}">${c}</option>`);
   }
   const catList = $('#catList');
-  catList.innerHTML = DB.categories.map(c=>`<div><label><input type="checkbox" class="catFilter" value="${c}"> ${c}</label></div>`).join('');
-  $$('.catFilter').forEach(cb=> cb.addEventListener('change', renderItems));
+  if(catList){
+    catList.innerHTML = DB.categories.map(c=>`<div><label><input type="checkbox" class="catFilter" value="${c}"> ${c}</label></div>`).join('');
+    $$('.catFilter').forEach(cb=> cb.addEventListener('change', renderItems));
+  }
 }
 $('#addCatBtn')?.addEventListener('click', ()=>{
   const name = prompt('Nome nuova categoria (es. palestra)')?.trim();
@@ -63,7 +65,7 @@ $('#addCatBtn')?.addEventListener('click', ()=>{
   if(!DB.categories.includes(name)){ DB.categories.push(name); save('categories'); renderCategories(); }
 });
 
-// ---------- Items ----------
+// ——— Items
 function toDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
 $('#addItemBtn')?.addEventListener('click', async ()=>{
   const cat = $('#newCategory').value;
@@ -74,10 +76,6 @@ $('#addItemBtn')?.addEventListener('click', async ()=>{
   DB.items.unshift({ id: crypto.randomUUID(), cat, color, photo, ts: Date.now() });
   save('items'); $('#newColor').value=''; $('#newPhoto').value=''; renderItems();
 });
-
-function renderFilters(){
-  // già creati in renderCategories; qui potresti aggiungere altro in futuro
-}
 
 function renderItems(){
   const cats = Array.from(document.querySelectorAll('.catFilter:checked')).map(x=>x.value);
@@ -100,14 +98,14 @@ function renderItems(){
 $('#searchTxt')?.addEventListener('input', renderItems);
 $('#clearFilters')?.addEventListener('click', ()=>{ $$('.catFilter').forEach(c=>c.checked=false); $('#searchTxt').value=''; renderItems(); });
 
-// ---------- Long Press Action Sheet ----------
-let lpTimer=null, lpTarget=null;
+// ——— Long Press
+let lpTimer=null;
 function attachLongPress(el){
   el.addEventListener('touchstart', onStart);
   el.addEventListener('mousedown', onStart);
   el.addEventListener('touchend', onEnd);
   el.addEventListener('mouseup', onEnd);
-  function onStart(e){ e.preventDefault(); lpTarget = el; lpTimer = setTimeout(()=> openSheet(el), 450); }
+  function onStart(e){ e.preventDefault(); lpTimer = setTimeout(()=> openSheet(el), 450); }
   function onEnd(){ clearTimeout(lpTimer); }
 }
 function openSheet(el){
@@ -119,12 +117,12 @@ function openSheet(el){
   $('#lpOverlay').style.display='block'; $('#lpSheet').style.display='block';
   $('#lpCloseBtn').onclick = closeSheet;
   $('#lpDeleteBtn').onclick = ()=>{ DB.items = DB.items.filter(x=>x.id!==id); save('items'); closeSheet(); renderItems(); };
-  $('#lpMoveBtn').onclick = ()=>{ closeSheet(); openEdit(it, true); };
-  $('#lpEditBtn').onclick = ()=>{ closeSheet(); openEdit(it, false); };
+  $('#lpMoveBtn').onclick = ()=>{ closeSheet(); openEdit(it); };
+  $('#lpEditBtn').onclick = ()=>{ closeSheet(); openEdit(it); };
 }
 function closeSheet(){ $('#lpOverlay').style.display='none'; $('#lpSheet').style.display='none'; }
 
-// ---------- Edit Sheet ----------
+// ——— Edit
 let editingId=null;
 function openEdit(it){
   editingId = it.id;
@@ -144,7 +142,7 @@ function openEdit(it){
 }
 function closeEdit(){ $('#editSheet').style.display='none'; $('#lpOverlay').style.display='none'; editingId=null; }
 
-// ---------- Weather ----------
+// ——— Meteo (Open-Meteo)
 async function geocodeCity(q){
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=it&format=json`;
   const r = await fetch(url); const j = await r.json(); return j.results?.[0] || null;
@@ -154,9 +152,10 @@ async function fetchWeather(lat, lon){
   const r = await fetch(url); return await r.json();
 }
 function renderWeather(){
-  if(!DB.weather){ $('#wxBox').textContent = 'Nessun dato meteo.'; return; }
+  if(!DB.weather){ const box=$('#wxBox'); if(box) box.textContent='Nessun dato meteo.'; return; }
   const d = DB.weather.daily;
-  $('#wxBox').textContent = `min ${Math.round(d.temperature_2m_min[0])}°C • max ${Math.round(d.temperature_2m_max[0])}°C • pioggia ${(d.precipitation_probability_max[0]||0)}% • vento max ${Math.round(d.wind_speed_10m_max[0]||0)} km/h`;
+  const box = $('#wxBox'); if(!box) return;
+  box.textContent = `min ${Math.round(d.temperature_2m_min[0])}°C • max ${Math.round(d.temperature_2m_max[0])}°C • pioggia ${(d.precipitation_probability_max[0]||0)}% • vento max ${Math.round(d.wind_speed_10m_max[0]||0)} km/h`;
 }
 $('#useGPS')?.addEventListener('click', ()=>{
   if(!navigator.geolocation){ alert('GPS non disponibile'); return; }
@@ -171,7 +170,7 @@ $('#setCity')?.addEventListener('click', async ()=>{
   DB.weather = await fetchWeather(g.latitude, g.longitude); renderWeather();
 });
 
-// ---------- Outfit AI-ish (euristica + meteo) ----------
+// ——— Outfit (euristica + meteo)
 function aiText(o){
   const rain = DB.weather?.daily?.precipitation_probability_max?.[0] || 0;
   const tip = rain>=40 ? 'Oggi piove, punta su capi impermeabili.' : 'Tempo ok, scegli capi comodi e stratifica se serve.';
@@ -212,19 +211,18 @@ $('#genOutfitsBtn')?.addEventListener('click', ()=>{
   `).join('');
 });
 
-// Export outfit come immagine (poster semplice)
+// Export outfit semplice
 $('#exportOutfitBtn')?.addEventListener('click', ()=>{
   const c = $('#exportCanvas'); const ctx = c.getContext('2d');
   ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
-  ctx.fillStyle = '#1b133b'; ctx.font = 'bold 42px system-ui'; ctx.fillText('Avatly – Outfit', 40, 80);
+  ctx.fillStyle = '#5A2732'; ctx.font = 'bold 42px system-ui'; ctx.fillText('Avatly – Outfit', 40, 80);
   const list = Array.from($('#outfitList').querySelectorAll('li')).map(li=>li.textContent);
   ctx.font = '28px system-ui'; let y=140;
   list.forEach(t=>{ ctx.fillText('• '+t, 60, y); y+=40; });
-  const url = c.toDataURL('image/png');
-  const a = document.createElement('a'); a.href = url; a.download = 'avatly-outfit.png'; a.click();
+  const url = c.toDataURL('image/png'); const a = document.createElement('a'); a.href = url; a.download = 'avatly-outfit.png'; a.click();
 });
 
-// ---------- Planner ----------
+// ——— Planner
 function weekDays(){
   const now = new Date();
   const day = now.getDay(); // 0 dom
@@ -268,29 +266,7 @@ $('#shareReminders')?.addEventListener('click', ()=>{
   navigator.clipboard.writeText(text).then(()=> alert('Copiato negli appunti. Incolla nei Promemoria.'));
 });
 
-// ---------- Settings ----------
-function applyTheme(theme){
-  DB.settings.theme = theme; save('settings');
-  if(theme==='monelia') document.documentElement.classList.add('theme-monelia');
-  else document.documentElement.classList.remove('theme-monelia');
+// ——— PWA
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=> navigator.serviceWorker.register('./service-worker.js'));
 }
-$('#saveProfile')?.addEventListener('click', ()=>{
-  DB.settings.profileName = $('#profileName').value.trim();
-  save('settings'); alert('Profilo salvato ✓');
-});
-$$('[data-theme]').forEach(b=> b.addEventListener('click', ()=> applyTheme(b.getAttribute('data-theme'))));
-$('#logout')?.addEventListener('click', ()=>{ if(confirm('Uscire dall\'app?')){ localStorage.removeItem('av_user'); location.reload(); } });
-$('#exportData')?.addEventListener('click', ()=>{
-  const data = {user:DB.user, items:DB.items, categories:DB.categories, plan:DB.plan, settings:DB.settings};
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); a.download='avatly-backup.json'; a.click();
-});
-$('#importBtn')?.addEventListener('click', ()=> $('#importData').click());
-$('#importData')?.addEventListener('change', async e=>{
-  const f = e.target.files[0]; if(!f) return; const j = JSON.parse(await f.text());
-  if(j.user) DB.user = j.user; if(j.items) DB.items = j.items; if(j.categories) DB.categories = j.categories; if(j.plan) DB.plan = j.plan; if(j.settings) DB.settings = j.settings;
-  save('user'); save('items'); save('categories'); save('plan'); save('settings');
-  renderCategories(); renderItems(); renderPlanner(); applyTheme(DB.settings.theme||'lavanda'); alert('Dati importati ✓');
-});
-
-// ---------- PWA ----------
-if('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./service-worker.js')); }
