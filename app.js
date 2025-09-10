@@ -1,400 +1,290 @@
-// Avatly PWA – client-only prototype
+// Avatly v0.1 – client-only PWA (mock login + local storage).
+// In v1.0: auth Apple/Google/Email reali + cloud.
+
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 
-const db = {
+const DB = {
+  user: JSON.parse(localStorage.getItem('av_user') || 'null'),
   items: JSON.parse(localStorage.getItem('av_items') || '[]'),
-  outfits: JSON.parse(localStorage.getItem('av_outfits') || '[]'),
-  avatar: JSON.parse(localStorage.getItem('av_avatar') || '{"height":null,"weight":null,"shape":"dritta","style":""}'),
-  settings: JSON.parse(localStorage.getItem('av_settings') || '{"profileName":"Avatly user","unit":"metric","city":"","lat":null,"lon":null}'),
+  categories: JSON.parse(localStorage.getItem('av_categories') || '["top","bottom","dress","outerwear","shoes","bag","accessories"]'),
+  plan: JSON.parse(localStorage.getItem('av_plan') || '{}'), // { 'YYYY-MM-DD': [itemIds] }
+  settings: JSON.parse(localStorage.getItem('av_settings') || '{"profileName":"","theme":"lavanda"}'),
   weather: null
 };
-function save(k){ localStorage.setItem('av_'+k, JSON.stringify(db[k])); }
+function save(k){ localStorage.setItem('av_'+k, JSON.stringify(DB[k])); }
 
-// Tabs
-$$('.tab').forEach(b=>b.addEventListener('click', ()=>{
-  $$('.tab').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active');
-  $$('.panel').forEach(p=>p.classList.remove('active'));
-  $('#'+b.dataset.tab).classList.add('active');
-}));
-
-// ---------- WARDROBE ----------
-const itemForm = $('#itemForm');
-const wardrobeList = $('#wardrobeList');
-const filterText = $('#filterText');
-const filterCat = $('#filterCat');
-
-itemForm.addEventListener('submit', async e => {
-  e.preventDefault();
-  const fd = new FormData(itemForm);
-  let photoData = '';
-  const file = fd.get('photo');
-  if(file && file.size){
-    photoData = await toBase64(file);
-  }
-  const it = {
-    id: crypto.randomUUID(),
-    photo: photoData,
-    name: fd.get('name').trim(),
-    category: fd.get('category'),
-    color: (fd.get('color')||'').trim(),
-    warmth: Number(fd.get('warmth')||3),
-    waterproof: fd.get('waterproof')==='yes',
-    tags: (fd.get('tags')||'').trim(),
-    note: (fd.get('note')||'').trim(),
-    ts: Date.now()
-  };
-  db.items.unshift(it); save('items'); itemForm.reset(); renderWardrobe();
+// ---------- LOGIN (mock) ----------
+function showApp(){
+  $('#splash').hidden = true;
+  $('#appHeader').hidden = false; $('#appMain').hidden = false; $('#appFooter').hidden = false;
+  renderCategories(); renderItems(); renderFilters(); renderPlanner();
+  applyTheme(DB.settings.theme || 'lavanda');
+}
+function loginMock(type){
+  DB.user = { id: crypto.randomUUID(), provider:type, email: $('#email')?.value || '' };
+  save('user'); showApp();
+}
+if(DB.user){ showApp(); }
+$('#loginApple')?.addEventListener('click', ()=> loginMock('apple'));
+$('#loginGoogle')?.addEventListener('click', ()=> loginMock('google'));
+$('#loginEmail')?.addEventListener('click', ()=>{
+  if(!$('#email').value || !$('#password').value){ alert('Inserisci email e password'); return; }
+  loginMock('email');
 });
 
-function toBase64(file){
-  return new Promise((resolve,reject)=>{
-    const r = new FileReader(); r.onload=()=>resolve(r.result); r.onerror=reject; r.readAsDataURL(file);
-  });
+// ---------- Tabs ----------
+$$('.tab').forEach(b=>b?.addEventListener('click', ()=>{
+  $$('.tab').forEach(x=>x.classList.remove('active')); b.classList.add('active');
+  $$('.panel').forEach(p=>p.classList.remove('active')); $('#'+b.dataset.tab).classList.add('active');
+}));
+
+// ---------- Categories ----------
+function renderCategories(){
+  const sel = $('#newCategory'); sel.innerHTML = '';
+  DB.categories.forEach(c=> sel.innerHTML += `<option value="${c}">${c}</option>`);
+  const editSel = $('#editCategory'); if(editSel){
+    editSel.innerHTML = '';
+    DB.categories.forEach(c=> editSel.innerHTML += `<option value="${c}">${c}</option>`);
+  }
+  const catList = $('#catList');
+  catList.innerHTML = DB.categories.map(c=>`<div><label><input type="checkbox" class="catFilter" value="${c}"> ${c}</label></div>`).join('');
+  $$('.catFilter').forEach(cb=> cb.addEventListener('change', renderItems));
+}
+$('#addCatBtn')?.addEventListener('click', ()=>{
+  const name = prompt('Nome nuova categoria (es. palestra)')?.trim();
+  if(!name) return;
+  if(!DB.categories.includes(name)){ DB.categories.push(name); save('categories'); renderCategories(); }
+});
+
+// ---------- Items ----------
+function toDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
+$('#addItemBtn')?.addEventListener('click', async ()=>{
+  const cat = $('#newCategory').value;
+  const color = $('#newColor').value.trim();
+  let photo='';
+  const f = $('#newPhoto').files[0];
+  if(f) photo = await toDataURL(f);
+  DB.items.unshift({ id: crypto.randomUUID(), cat, color, photo, ts: Date.now() });
+  save('items'); $('#newColor').value=''; $('#newPhoto').value=''; renderItems();
+});
+
+function renderFilters(){
+  // già creati in renderCategories; qui potresti aggiungere altro in futuro
 }
 
-function renderWardrobe(){
-  const q = (filterText.value||'').toLowerCase();
-  const cat = filterCat.value;
-  const items = db.items.filter(it=>{
-    const matchTxt = (it.name+' '+it.color+' '+it.tags).toLowerCase().includes(q);
-    const matchCat = cat ? it.category===cat : true;
-    return matchTxt && matchCat;
-  });
-  if(!items.length){ wardrobeList.innerHTML = '<p class="small">Nessun capo trovato.</p>'; return; }
-  wardrobeList.innerHTML = items.map(it=>`
-    <div class="card-tile" data-id="${it.id}">
-      ${it.photo ? `<img src="${it.photo}" alt="${it.name}">` : `<div style="height:180px;border:1px dashed #e4dafc;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6b5bb0">Nessuna foto</div>`}
-      <div class="title" style="margin-top:8px">${it.name}</div>
-      <div class="small">${it.category} • ${it.color || '—'} ${it.tags?('• '+it.tags):''}</div>
-      <div class="small">Calore ${it.warmth} ${it.waterproof?'• Impermeabile':''}</div>
-      <div class="actions">
-        <button class="btn" data-add="${it.id}">Aggiungi a Mix</button>
-        <button class="btn" data-del="${it.id}">Elimina</button>
+function renderItems(){
+  const cats = Array.from(document.querySelectorAll('.catFilter:checked')).map(x=>x.value);
+  const q = ($('#searchTxt')?.value || '').toLowerCase();
+  let arr = DB.items.slice();
+  if(cats.length) arr = arr.filter(i=> cats.includes(i.cat));
+  if(q) arr = arr.filter(i=> (i.color||'').toLowerCase().includes(q));
+  const g = $('#itemsGrid'); if(!g) return;
+  if(!arr.length){ g.innerHTML = '<p class="small muted">Nessun capo. Aggiungine uno sopra.</p>'; return; }
+  g.innerHTML = arr.map(i=>`
+    <div class="item-card" data-id="${i.id}">
+      <div class="item-thumb" style="background-image:url('${i.photo||""}')"></div>
+      <div class="item-body">
+        <div><span class="badge">${i.cat}</span> ${i.color||''}</div>
       </div>
     </div>
   `).join('');
-  wardrobeList.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
-    const id = b.getAttribute('data-del');
-    db.items = db.items.filter(x=>x.id!==id); save('items'); renderWardrobe(); refreshSelectors();
-  }));
-  wardrobeList.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click', ()=>{
-    const it = db.items.find(x=>x.id===b.getAttribute('data-add'));
-    quickAddToMix(it);
-  }));
+  g.querySelectorAll('.item-card').forEach(card=> attachLongPress(card));
 }
-filterText.addEventListener('input', renderWardrobe);
-filterCat.addEventListener('change', renderWardrobe);
-renderWardrobe();
+$('#searchTxt')?.addEventListener('input', renderItems);
+$('#clearFilters')?.addEventListener('click', ()=>{ $$('.catFilter').forEach(c=>c.checked=false); $('#searchTxt').value=''; renderItems(); });
 
-// ---------- AVATAR ----------
-$('#height').value = db.avatar.height || '';
-$('#weight').value = db.avatar.weight || '';
-$('#shape').value = db.avatar.shape || 'dritta';
-$('#style').value = db.avatar.style || '';
-
-$('#saveAvatar').addEventListener('click', ()=>{
-  db.avatar.height = Number($('#height').value) || null;
-  db.avatar.weight = Number($('#weight').value) || null;
-  db.avatar.shape = $('#shape').value;
-  db.avatar.style = $('#style').value.trim();
-  save('avatar');
-  $('#sizeAdvice').innerHTML = sizeAdvice();
-});
-
-function sizeAdvice(){
-  const h = db.avatar.height, w = db.avatar.weight, s = db.avatar.shape;
-  if(!h || !w) return 'Consiglio taglie: inserisci altezza e peso per un suggerimento indicativo.';
-  const bmi = w / ((h/100)*(h/100));
-  let hint = 'Fit consigliato: ';
-  if(bmi<18.5) hint += 'tagli regolari o leggermente oversize (evita troppo aderente)';
-  else if(bmi<25) hint += 'true-to-size';
-  else hint += 'mezza taglia in più / fit comodo';
-  hint += `. Shape ${s}: bilancia volumi (es. `;
-  if(s==='pera') hint += 'spalle strutturate, vita evidenziata';
-  if(s==='mela') hint += 'linee verticali, scolli a V';
-  if(s==='clessidra') hint += 'cinture/struttura in vita';
-  if(s==='dritta') hint += 'layer per creare definizione';
-  if(s==='triangolo') hint += 'volumi inferiori più asciutti';
-  hint += ').';
-  return hint;
+// ---------- Long Press Action Sheet ----------
+let lpTimer=null, lpTarget=null;
+function attachLongPress(el){
+  el.addEventListener('touchstart', onStart);
+  el.addEventListener('mousedown', onStart);
+  el.addEventListener('touchend', onEnd);
+  el.addEventListener('mouseup', onEnd);
+  function onStart(e){ e.preventDefault(); lpTarget = el; lpTimer = setTimeout(()=> openSheet(el), 450); }
+  function onEnd(){ clearTimeout(lpTimer); }
 }
-$('#sizeAdvice').innerHTML = sizeAdvice();
-
-// ---------- ARMOCROMIA (base euristica) ----------
-$('#analyzeColor').addEventListener('click', ()=>{
-  const skin = $('#skinColor').value; // hex
-  const hair = $('#hair').value;
-  const eyes = $('#eyes').value;
-  const season = guessSeason(skin, hair, eyes);
-  const pal = palettes[season] || palettes['Neutro'];
-  $('#seasonResult').innerHTML = `<div><strong>Stagione:</strong> ${season}</div>
-    <div class="swatches">${pal.colors.map(c=>`<div class="swatch" style="background:${c}" title="${c}"></div>`).join('')}</div>
-    <div class="small">Consigli: ${pal.tips}</div>`;
-});
-
-function hexToRgb(hex){
-  const r = parseInt(hex.slice(1,3),16), g=parseInt(hex.slice(3,5),16), b=parseInt(hex.slice(5,7),16);
-  return {r,g,b};
+function openSheet(el){
+  const id = el.getAttribute('data-id');
+  const it = DB.items.find(x=>x.id===id); if(!it) return;
+  $('#lpThumb').style.backgroundImage = `url('${it.photo||""}')`;
+  $('#lpTitle').textContent = it.cat;
+  $('#lpDetails').textContent = it.color || '—';
+  $('#lpOverlay').style.display='block'; $('#lpSheet').style.display='block';
+  $('#lpCloseBtn').onclick = closeSheet;
+  $('#lpDeleteBtn').onclick = ()=>{ DB.items = DB.items.filter(x=>x.id!==id); save('items'); closeSheet(); renderItems(); };
+  $('#lpMoveBtn').onclick = ()=>{ closeSheet(); openEdit(it, true); };
+  $('#lpEditBtn').onclick = ()=>{ closeSheet(); openEdit(it, false); };
 }
-function guessSeason(skinHex, hair, eyes){
-  const {r,g,b} = hexToRgb(skinHex);
-  const avg = (r+g+b)/3;
-  const coolScore = (Math.max(r,g,b)===b ? 1:0) + (g>r?0.5:0) + (eyes.includes('freddi')?0.7:0) + (hair.includes('freddi')?0.7:0);
-  const warmScore = (r>g?0.5:0) + (hair.includes('caldi')?0.7:0) + (eyes.includes('caldi')?0.6:0) + (hair.includes('rossi')?0.6:0);
-  if(avg>220 && coolScore>warmScore) return 'Estate';
-  if(avg>220 && warmScore>=coolScore) return 'Primavera';
-  if(avg<140 && coolScore>warmScore) return 'Inverno';
-  if(avg<140 && warmScore>=coolScore) return 'Autunno';
-  // neutro
-  return warmScore>coolScore ? 'Primavera' : 'Estate';
-}
-const palettes = {
-  'Inverno': { colors:['#000000','#1E3A8A','#5B21B6','#0EA5E9','#E11D48','#f0f0f0'], tips:'toni freddi, intensi, contrasti netti; evita beige caldi.'},
-  'Estate': { colors:['#6B7280','#64748B','#60A5FA','#93C5FD','#A78BFA','#FCE7F3'], tips:'freddi e soft (polverosi); punta su lavanda, rosa cipria, azzurri.'},
-  'Autunno': { colors:['#78350F','#92400E','#B45309','#A3E635','#22C55E','#F59E0B'], tips:'caldi e profondi; terracotta, oliva, senape, oro.'},
-  'Primavera': { colors:['#F59E0B','#F97316','#10B981','#34D399','#F472B6','#fde68a'], tips:'caldi e brillanti; corallo, pesca, verde menta.'},
-  'Neutro': { colors:['#6b7280','#94a3b8','#d1d5db','#f3f4f6','#e5e7eb','#111827'], tips:'neutri versatili; bilancia freddo/caldo con accessori.'}
-};
+function closeSheet(){ $('#lpOverlay').style.display='none'; $('#lpSheet').style.display='none'; }
 
-// ---------- MIX & MATCH ----------
-const selTop = $('#selTop'), selBottom = $('#selBottom'), selDress = $('#selDress'), selOuter = $('#selOuter'), selShoes = $('#selShoes'), selAcc = $('#selAcc');
-function refreshSelectors(){
-  const byCat = cat => db.items.filter(i=>i.category===cat);
-  function fill(sel, items){
-    sel.innerHTML = '<option value="">—</option>' + items.map(i=>`<option value="${i.id}">${i.name}</option>`).join('');
-  }
-  fill(selTop, byCat('top'));
-  fill(selBottom, byCat('bottom'));
-  fill(selDress, byCat('dress'));
-  fill(selOuter, byCat('outerwear'));
-  fill(selShoes, byCat('shoes'));
-  fill(selAcc, byCat('accessory'));
+// ---------- Edit Sheet ----------
+let editingId=null;
+function openEdit(it){
+  editingId = it.id;
+  renderCategories();
+  $('#editCategory').value = it.cat;
+  $('#editColor').value = it.color || '';
+  $('#editSheet').style.display='block'; $('#lpOverlay').style.display='block';
+  $('#saveEditBtn').onclick = async ()=>{
+    const item = DB.items.find(x=>x.id===editingId); if(!item) return;
+    item.cat = $('#editCategory').value;
+    item.color = $('#editColor').value.trim();
+    const f = $('#editPhoto').files[0];
+    if(f){ item.photo = await toDataURL(f); }
+    save('items'); closeEdit(); renderItems();
+  };
+  $('#cancelEditBtn').onclick = closeEdit;
 }
-function quickAddToMix(it){
-  const map = {top:selTop, bottom:selBottom, dress:selDress, outerwear:selOuter, shoes:selShoes, accessory:selAcc};
-  refreshSelectors();
-  if(map[it.category]){ map[it.category].value = it.id; }
-}
-refreshSelectors();
+function closeEdit(){ $('#editSheet').style.display='none'; $('#lpOverlay').style.display='none'; editingId=null; }
 
-$('#composeOutfit').addEventListener('click', ()=>{
-  const ids = [selDress.value||'', selTop.value||'', selBottom.value||'', selOuter.value||'', selShoes.value||'', selAcc.value||''].filter(Boolean);
-  const picks = ids.map(id=>db.items.find(i=>i.id===id)).filter(Boolean);
-  if(!picks.length){ alert('Seleziona almeno 2 capi'); return; }
-  const outfit = { id: crypto.randomUUID(), items: picks, ts: Date.now() };
-  db.outfits.unshift(outfit); save('outfits'); renderSavedOutfits();
-  $('#mixPreview').innerHTML = renderOutfitCard(picks, 'Nuovo outfit salvato');
-});
-
-function renderOutfitCard(items, title){
-  const warmth = items.reduce((s,i)=>s+(i.warmth||3),0);
-  const hasWP = items.some(i=>i.waterproof);
-  return `<div class="outfit">
-    <div><strong>${title}</strong> <span class="badge">Calore ${warmth}</span> ${hasWP?'<span class="badge">Pioggia ok</span>':''}</div>
-    <ul>${items.map(i=>`<li>${i.name} <span class="small">(${i.category}${i.color?(', '+i.color):''})</span></li>`).join('')}</ul>
-  </div>`;
-}
-function renderSavedOutfits(){
-  const cont = $('#savedOutfits');
-  if(!db.outfits.length){ cont.innerHTML = '<p class="small">Nessun outfit salvato.</p>'; return; }
-  cont.innerHTML = db.outfits.map(o=>`
-    <div class="card-tile">
-      ${renderOutfitCard(o.items, 'Outfit')}
-      <div class="actions"><button class="btn" data-del="${o.id}">Elimina</button></div>
-    </div>
-  `).join('');
-  cont.querySelectorAll('[data-del]').forEach(b=>b.addEventListener('click', ()=>{
-    const id = b.getAttribute('data-del');
-    db.outfits = db.outfits.filter(x=>x.id!==id); save('outfits'); renderSavedOutfits();
-  }));
-}
-renderSavedOutfits();
-
-// ---------- HOME / METEO + daily generator ----------
+// ---------- Weather ----------
 async function geocodeCity(q){
   const url = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(q)}&count=1&language=it&format=json`;
-  const res = await fetch(url); if(!res.ok) throw new Error('Errore geocoding');
-  const j = await res.json();
-  const r = j.results && j.results[0]; if(!r) throw new Error('Località non trovata');
-  return { lat: r.latitude, lon: r.longitude, name: `${r.name}${r.country_code?(', '+r.country_code):''}` };
+  const r = await fetch(url); const j = await r.json(); return j.results?.[0] || null;
 }
 async function fetchWeather(lat, lon){
-  const params = new URLSearchParams({
-    latitude: lat, longitude: lon,
-    hourly: 'temperature_2m,precipitation,wind_speed_10m',
-    daily: 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max',
-    timezone: 'auto'
-  });
-  const url = `https://api.open-meteo.com/v1/forecast?${params.toString()}`;
-  const res = await fetch(url);
-  if(!res.ok) throw new Error('Errore meteo');
-  return await res.json();
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&timezone=auto`;
+  const r = await fetch(url); return await r.json();
 }
-function cToF(c){ return (c*9/5)+32; }
-function formatTemp(c){ return db.settings.unit==='imperial'? Math.round(cToF(c))+'°F' : Math.round(c)+'°C'; }
-function wxSummary(){
-  if(!db.weather){ return '<p class="small">Nessun dato meteo. Usa GPS o inserisci una città.</p>'; }
-  const d = db.weather.daily;
-  const tmax = d.temperature_2m_max[0], tmin = d.temperature_2m_min[0];
-  const rain = d.precipitation_probability_max[0] || 0;
-  const wind = d.wind_speed_10m_max[0] || 0;
-  return `<div><strong>Località:</strong> ${db.settings.city || 'GPS'}</div>
-    <div><strong>Oggi:</strong> min ${formatTemp(tmin)} • max ${formatTemp(tmax)} • pioggia ${rain}% • vento max ${Math.round(wind)} km/h</div>`;
+function renderWeather(){
+  if(!DB.weather){ $('#wxBox').textContent = 'Nessun dato meteo.'; return; }
+  const d = DB.weather.daily;
+  $('#wxBox').textContent = `min ${Math.round(d.temperature_2m_min[0])}°C • max ${Math.round(d.temperature_2m_max[0])}°C • pioggia ${(d.precipitation_probability_max[0]||0)}% • vento max ${Math.round(d.wind_speed_10m_max[0]||0)} km/h`;
 }
-function renderWeather(){ $('#wxSummary').innerHTML = wxSummary(); }
-
-async function setCityByQuery(q){
-  const g = await geocodeCity(q);
-  db.settings.city = g.name; db.settings.lat = g.lat; db.settings.lon = g.lon; save('settings');
-  db.weather = await fetchWeather(g.lat, g.lon);
-  renderWeather(); generateTodayOutfits();
-}
-
-$('#cityForm').addEventListener('submit', e=>{ e.preventDefault(); const q = $('#cityInput').value.trim(); if(q) setCityByQuery(q); });
-$('#useGPS').addEventListener('click', ()=>{
+$('#useGPS')?.addEventListener('click', ()=>{
   if(!navigator.geolocation){ alert('GPS non disponibile'); return; }
   navigator.geolocation.getCurrentPosition(async pos=>{
     const {latitude, longitude} = pos.coords;
-    db.settings.city = 'GPS'; db.settings.lat = latitude; db.settings.lon = longitude; save('settings');
-    db.weather = await fetchWeather(latitude, longitude); renderWeather(); generateTodayOutfits();
+    DB.weather = await fetchWeather(latitude, longitude); renderWeather();
   }, ()=> alert('Impossibile ottenere la posizione'));
 });
-$('#refreshWx').addEventListener('click', async ()=>{
-  if(db.settings.lat && db.settings.lon){ db.weather = await fetchWeather(db.settings.lat, db.settings.lon); renderWeather(); generateTodayOutfits(); }
+$('#setCity')?.addEventListener('click', async ()=>{
+  const q = $('#cityInput').value.trim(); if(!q) return;
+  const g = await geocodeCity(q); if(!g){ alert('Località non trovata'); return; }
+  DB.weather = await fetchWeather(g.latitude, g.longitude); renderWeather();
 });
 
-function generateTodayOutfits(){
-  const cont = $('#todayOutfits');
-  const sets = generateOutfitsBasedOnWeather();
-  if(!sets.length){ cont.innerHTML = '<p class="small">Aggiungi qualche capo al guardaroba per generare outfit.</p>'; return; }
-  cont.innerHTML = sets.map((o,i)=>renderOutfitCard(o, 'Outfit '+(i+1))).join('');
+// ---------- Outfit AI-ish (euristica + meteo) ----------
+function aiText(o){
+  const rain = DB.weather?.daily?.precipitation_probability_max?.[0] || 0;
+  const tip = rain>=40 ? 'Oggi piove, punta su capi impermeabili.' : 'Tempo ok, scegli capi comodi e stratifica se serve.';
+  const names = o.map(i=> i.color ? `${i.cat} ${i.color}` : i.cat).join(' + ');
+  return `${tip} Consiglio: ${names}.`;
 }
-$('#genToday').addEventListener('click', generateTodayOutfits);
-
-function generateOutfitsBasedOnWeather(){
-  if(db.items.length===0) return [];
-  const d = db.weather && db.weather.daily;
-  const tmax = d ? d.temperature_2m_max[0] : 22;
-  const tmin = d ? d.temperature_2m_min[0] : 16;
-  const rain = d ? (d.precipitation_probability_max[0]||0) : 0;
-  const tavg = (tmax+tmin)/2;
-  const raining = rain>=40;
-
-  const tops = db.items.filter(i=>i.category==='top');
-  const bottoms = db.items.filter(i=>i.category==='bottom');
-  const dresses = db.items.filter(i=>i.category==='dress');
-  const outer = db.items.filter(i=>i.category==='outerwear');
-  const shoes = db.items.filter(i=>i.category==='shoes');
-  const acc = db.items.filter(i=>i.category==='accessory');
-
-  function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
-
-  function compose(){
-    let o = [];
-    if(dresses.length && Math.random()<0.3){ o.push(pick(dresses)); }
-    else { if(tops.length) o.push(pick(tops)); if(bottoms.length) o.push(pick(bottoms)); }
-    if(tavg<18 && outer.length) o.push(pick(outer));
-    if(shoes.length) o.push(pick(shoes));
-    if(acc.length && Math.random()<0.5) o.push(pick(acc));
-
-    if(raining && !o.some(i=>i.waterproof)){
-      const wp = [...outer,...shoes].filter(i=>i.waterproof);
-      if(wp.length) o.push(pick(wp));
-    }
-    // warm/cold adjust
-    const warmth = o.reduce((s,i)=>s+(i.warmth||3),0);
-    if(tavg>=25 && warmth>7){ o = o.filter(i=>i.category!=='outerwear'); }
-    if(tavg<12 && outer.length && !o.some(i=>i.category==='outerwear')) o.push(pick(outer));
-    return o;
-  }
-
+function generateOutfits(){
+  const by = c => DB.items.filter(i=>i.cat===c);
   const results = [];
-  const keys = new Set();
   let guard=0;
-  while(results.length<3 && guard<30){
+  while(results.length<3 && guard<50){
     guard++;
-    const o = compose();
-    const key = o.map(i=>i.id).sort().join('-');
-    if(o.length>=3 && !keys.has(key)){ keys.add(key); results.push(o); }
+    let o = [];
+    if(by('dress').length && Math.random()<0.35) o.push(pick(by('dress')));
+    else { if(by('top').length) o.push(pick(by('top'))); if(by('bottom').length) o.push(pick(by('bottom'))); }
+    if(by('outerwear').length && Math.random()<0.5) o.push(pick(by('outerwear')));
+    if(by('shoes').length) o.push(pick(by('shoes')));
+    if(by('bag').length && Math.random()<0.5) o.push(pick(by('bag')));
+    if(by('accessories').length && Math.random()<0.4) o.push(pick(by('accessories')));
+    const key = o.map(x=>x.id).sort().join('-');
+    if(o.length>=3 && !results.some(r=> r.key===key)){ results.push({key, items:o}); }
   }
   return results;
 }
-
-// ---------- SEARCH (mock offline suggestions) ----------
-$('#runSearch').addEventListener('click', ()=>{
-  const color = ($('#qColor').value||'').toLowerCase();
-  const cat = $('#qCat').value;
-  const brand = $('#qBrand').value;
-  const res = db.items.filter(i=>{
-    const okColor = color ? (i.color||'').toLowerCase().includes(color) : true;
-    const okCat = cat ? i.category===cat : true;
-    return okColor && okCat;
-  }).slice(0,8);
-  const container = $('#searchResults');
-  if(!res.length){
-    container.innerHTML = '<p class="small">Nessun capo nel tuo guardaroba corrisponde. Idee shop: cerca "'+[brand||'Zara', color || 'lavanda', cat||'top'].filter(Boolean).join(' ')+'" sul tuo store preferito.</p>';
-    return;
-  }
-  container.innerHTML = res.map(i=>`
-    <div class="card-tile">
-      ${i.photo ? `<img src="${i.photo}">` : `<div style="height:180px;border:1px dashed #e4dafc;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#6b5bb0">Nessuna foto</div>`}
-      <div class="title">${i.name}</div>
-      <div class="small">${i.category} • ${i.color||'—'}</div>
+function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+$('#genOutfitsBtn')?.addEventListener('click', ()=>{
+  const sets = generateOutfits();
+  const cont = $('#outfitList'); cont.innerHTML='';
+  if(!sets.length){ cont.innerHTML = '<p class="small muted">Aggiungi più capi per comporre outfit.</p>'; return; }
+  $('#aiHint').textContent = aiText(sets[0].items);
+  cont.innerHTML = sets.map((s,i)=>`
+    <div class="item-card">
+      <div class="item-body">
+        <div><strong>Outfit ${i+1}</strong></div>
+        <ul>${s.items.map(it=>`<li>${it.cat} ${it.color||''}</li>`).join('')}</ul>
+      </div>
     </div>
   `).join('');
 });
 
-// ---------- SETTINGS ----------
-$('#profileName').value = db.settings.profileName || 'Avatly user';
-$('#unit').value = db.settings.unit || 'metric';
-$('#saveSettings').addEventListener('click', ()=>{
-  db.settings.profileName = $('#profileName').value.trim() || 'Avatly user';
-  db.settings.unit = $('#unit').value;
-  save('settings'); alert('Impostazioni salvate ✓');
-});
-$('#exportData').addEventListener('click', ()=>{
-  const data = {items:db.items, outfits:db.outfits, avatar:db.avatar, settings:db.settings};
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], {type:'application/json'}));
-  a.download = 'avatly-data.json'; a.click();
-});
-$('#importBtn').addEventListener('click', ()=> $('#importData').click());
-$('#importData').addEventListener('change', async e=>{
-  const f = e.target.files[0]; if(!f) return;
-  try{
-    const json = JSON.parse(await f.text());
-    if(json.items) db.items = json.items;
-    if(json.outfits) db.outfits = json.outfits;
-    if(json.avatar) db.avatar = json.avatar;
-    if(json.settings) db.settings = json.settings;
-    save('items'); save('outfits'); save('avatar'); save('settings');
-    renderWardrobe(); renderSavedOutfits(); refreshSelectors(); renderWeather();
-    alert('Dati importati ✓');
-  }catch(_){ alert('File non valido'); }
+// Export outfit come immagine (poster semplice)
+$('#exportOutfitBtn')?.addEventListener('click', ()=>{
+  const c = $('#exportCanvas'); const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#1b133b'; ctx.font = 'bold 42px system-ui'; ctx.fillText('Avatly – Outfit', 40, 80);
+  const list = Array.from($('#outfitList').querySelectorAll('li')).map(li=>li.textContent);
+  ctx.font = '28px system-ui'; let y=140;
+  list.forEach(t=>{ ctx.fillText('• '+t, 60, y); y+=40; });
+  const url = c.toDataURL('image/png');
+  const a = document.createElement('a'); a.href = url; a.download = 'avatly-outfit.png'; a.click();
 });
 
-// ---------- INIT / PWA ----------
-(async function init(){
-  if(db.settings.lat && db.settings.lon){
-    try{ db.weather = await fetchWeather(db.settings.lat, db.settings.lon); } catch(_){}
+// ---------- Planner ----------
+function weekDays(){
+  const now = new Date();
+  const day = now.getDay(); // 0 dom
+  const monday = new Date(now); const diff = (day===0? -6 : 1 - day);
+  monday.setDate(now.getDate()+diff);
+  const days=[];
+  for(let i=0;i<7;i++){ const d = new Date(monday); d.setDate(monday.getDate()+i);
+    const iso = d.toISOString().slice(0,10);
+    days.push({iso, label: d.toLocaleDateString('it-IT', {weekday:'short', day:'2-digit', month:'2-digit'})});
   }
-  renderWeather();
-})();
-
-// install prompt + SW
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt', (e)=>{
-  e.preventDefault(); deferredPrompt = e; $('#installBtn').hidden = false;
-});
-$('#installBtn').addEventListener('click', async ()=>{
-  if(!deferredPrompt) return;
-  deferredPrompt.prompt();
-  const { outcome } = await deferredPrompt.userChoice;
-  if(outcome==='accepted'){ $('#installBtn').hidden = true; }
-  deferredPrompt = null;
-});
-if('serviceWorker' in navigator){
-  window.addEventListener('load', ()=> navigator.serviceWorker.register('service-worker.js'));
+  return days;
 }
+function renderPlanner(){
+  const pg = $('#planGrid'); if(!pg) return;
+  const days = weekDays(); pg.innerHTML = '';
+  days.forEach(d=>{
+    const list = DB.plan[d.iso] || [];
+    pg.innerHTML += `<div class="day" data-day="${d.iso}"><div class="small muted">${d.label}</div><ul>${list.map(id=>{
+      const it = DB.items.find(x=>x.id===id); return it ? `<li>${it.cat} ${it.color||''}</li>` : '';
+    }).join('')}</ul><button class="btn" data-add="${d.iso}">+ outfit</button></div>`;
+  });
+  pg.querySelectorAll('[data-add]').forEach(b=> b.addEventListener('click', ()=>{
+    const ids = prompt('Inserisci ID capi separati da virgola (long-press su un capo per ricordarti l’ID):');
+    if(!ids) return;
+    const arr = ids.split(',').map(s=>s.trim()).filter(Boolean);
+    const day = b.getAttribute('data-add');
+    DB.plan[day] = (DB.plan[day]||[]).concat(arr);
+    save('plan'); renderPlanner();
+  }));
+}
+$('#shareReminders')?.addEventListener('click', ()=>{
+  const days = Object.keys(DB.plan).sort();
+  let text = 'Avatly – Planner settimana\n';
+  days.forEach(d=>{
+    const list = DB.plan[d]||[];
+    const names = list.map(id=>{
+      const it = DB.items.find(x=>x.id===id); return it ? (it.cat+' '+(it.color||'')) : id;
+    }).join(', ');
+    text += `\n${d}: ${names}`;
+  });
+  navigator.clipboard.writeText(text).then(()=> alert('Copiato negli appunti. Incolla nei Promemoria.'));
+});
+
+// ---------- Settings ----------
+function applyTheme(theme){
+  DB.settings.theme = theme; save('settings');
+  if(theme==='monelia') document.documentElement.classList.add('theme-monelia');
+  else document.documentElement.classList.remove('theme-monelia');
+}
+$('#saveProfile')?.addEventListener('click', ()=>{
+  DB.settings.profileName = $('#profileName').value.trim();
+  save('settings'); alert('Profilo salvato ✓');
+});
+$$('[data-theme]').forEach(b=> b.addEventListener('click', ()=> applyTheme(b.getAttribute('data-theme'))));
+$('#logout')?.addEventListener('click', ()=>{ if(confirm('Uscire dall\'app?')){ localStorage.removeItem('av_user'); location.reload(); } });
+$('#exportData')?.addEventListener('click', ()=>{
+  const data = {user:DB.user, items:DB.items, categories:DB.categories, plan:DB.plan, settings:DB.settings};
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'})); a.download='avatly-backup.json'; a.click();
+});
+$('#importBtn')?.addEventListener('click', ()=> $('#importData').click());
+$('#importData')?.addEventListener('change', async e=>{
+  const f = e.target.files[0]; if(!f) return; const j = JSON.parse(await f.text());
+  if(j.user) DB.user = j.user; if(j.items) DB.items = j.items; if(j.categories) DB.categories = j.categories; if(j.plan) DB.plan = j.plan; if(j.settings) DB.settings = j.settings;
+  save('user'); save('items'); save('categories'); save('plan'); save('settings');
+  renderCategories(); renderItems(); renderPlanner(); applyTheme(DB.settings.theme||'lavanda'); alert('Dati importati ✓');
+});
+
+// ---------- PWA ----------
+if('serviceWorker' in navigator){ window.addEventListener('load', ()=> navigator.serviceWorker.register('./service-worker.js')); }
