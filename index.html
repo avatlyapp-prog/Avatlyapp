@@ -4,15 +4,17 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
   <title>Avatly – Guardaroba & Outfit</title>
-  <meta name="theme-color" content="#A583C4"/>
+  <meta name="theme-color" content="#5A2732"/>
   <link rel="manifest" href="manifest.webmanifest"/>
   <link rel="stylesheet" href="styles.css"/>
 </head>
 <body>
-  <!-- Splash / Login -->
-<div id="introSplash" class="intro-splash">
-  <div class="intro-logo">Avatly</div>
-</div>
+  <!-- Splash iniziale: rosa con scritta bordeaux -->
+  <div id="introSplash" class="intro-splash">
+    <div class="intro-logo">Avatly</div>
+  </div>
+
+  <!-- Login / Onboarding -->
   <section id="splash" class="center full">
     <div class="logo">Avatly</div>
     <div class="card login">
@@ -123,8 +125,8 @@
         <input id="profileName" placeholder="Es. Marta"/>
         <label>Tema</label>
         <div class="inline">
-          <button class="btn" data-theme="lavanda">Lavanda</button>
-          <button class="btn" data-theme="monelia">Rosa Monélia</button>
+          <button class="btn" data-theme="lavanda">Lavanda (vecchio)</button>
+          <button class="btn" data-theme="monelia">Rosa Monélia (solo prova)</button>
         </div>
         <div class="inline">
           <button class="btn primary" id="saveProfile">Salva</button>
@@ -144,7 +146,7 @@
     </section>
   </main>
 
-  <!-- Long-press Action Sheet -->
+  <!-- Action sheet long-press -->
   <div id="lpOverlay" style="display:none;"></div>
   <div id="lpSheet" class="sheet" style="display:none;">
     <div id="lpThumb" class="thumb"></div>
@@ -158,7 +160,7 @@
     </div>
   </div>
 
-  <!-- Edit Sheet -->
+  <!-- Edit sheet -->
   <div id="editSheet" class="sheet" style="display:none;">
     <h3>Modifica capo</h3>
     <label>Categoria
