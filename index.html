@@ -2,91 +2,132 @@
 <html lang="it">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Avatly</title>
-
-  <!-- PWA -->
-  <meta name="theme-color" content="#5A1F2A" />
   <link rel="manifest" href="manifest.webmanifest" />
-  <link rel="icon" href="icon-192.png" sizes="192x192" />
-  <link rel="apple-touch-icon" href="icon-512.png" />
-
-  <link rel="stylesheet" href="styles.css?v=3" />
+  <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <div class="app" id="app">
-    <!-- Meteo pill -->
-    <div class="weather-pill" id="weatherPill" aria-live="polite" title="Meteo">
-      <span>☁️</span> <strong id="weatherTemp">22°</strong>
-    </div>
 
-    <!-- Messaggi AI -->
-    <div class="toast" id="aiToast" role="status" aria-live="polite" hidden></div>
+  <!-- Toast consigli/meteo -->
+  <div id="toast" class="toast" aria-live="polite"></div>
+  <button id="weatherChip" class="weather-chip" title="Meteo"><span>22°</span></button>
 
-    <main id="main">
-      <!-- Stage avatar -->
-      <section id="avatarStage" class="avatar-stage dotted">
-        <canvas id="avatarCanvas" width="320" height="320" aria-label="Avatar"></canvas>
-      </section>
+  <!-- CONTENUTO -->
+  <main id="app">
 
-      <p class="hint">
-        Tocca <span class="icon">⚙️</span> per personalizzare
-      </p>
+    <!-- HOME (splash semplice) -->
+    <section id="view-home" class="view visible">
+      <h1 class="brand">Avatly</h1>
+      <p class="lead">Organizza il tuo guardaroba, crea outfit e lascia che l’AI ti consigli cosa indossare.</p>
+    </section>
 
-      <!-- Floating settings button -->
-      <button class="fab" id="avatarFab" aria-label="Personalizza avatar">⚙️</button>
-    </main>
+    <!-- ARMADIO: manichino + categorie + griglia -->
+    <section id="view-wardrobe" class="view">
+      <div class="wardrobe-layout">
+        <!-- colonna sinistra: avatar/manichino -->
+        <aside class="avatar-panel">
+          <div class="avatar-stage">
+            <div class="avatar-stick" aria-label="avatar"></div>
+          </div>
+          <div class="avatar-actions">
+            <button class="btn ghost" id="btnAvatar">Personalizza avatar</button>
+          </div>
+        </aside>
 
-    <!-- Bottom navigation -->
-    <nav class="bottom-nav" aria-label="Navigazione principale">
-      <button class="tab" data-tab="ai" aria-label="AI"><span>✦</span><small>AI</small></button>
-      <button class="tab" data-tab="wardrobe" aria-label="Armadio"><span>🧴</span><small>Armadio</small></button>
-      <button class="tab active" data-tab="home" aria-label="Home"><span>🏠</span><small>Home</small></button>
-      <button class="tab" data-tab="calendar" aria-label="Calendario"><span>📅</span><small>Calendario</small></button>
-      <button class="tab" data-tab="settings" aria-label="Impostazioni"><span>⚙️</span><small>Impostazioni</small></button>
-    </nav>
-  </div>
+        <!-- colonna destra: categorie + filtro + griglia capi -->
+        <section class="catalog-panel">
+          <div class="cat-scroll" id="catScroll">
+            <!-- chip categorie (scroll orizzontale) -->
+            <button class="chip active" data-cat="tutti">Tutti</button>
+            <button class="chip" data-cat="top">Top</button>
+            <button class="chip" data-cat="pantaloni">Pantaloni</button>
+            <button class="chip" data-cat="gonne">Gonne</button>
+            <button class="chip" data-cat="vestiti">Vestiti</button>
+            <button class="chip" data-cat="scarpe">Scarpe</button>
+            <button class="chip" data-cat="borse">Borse</button>
+            <button class="chip" data-cat="accessori">Accessori</button>
+            <button class="chip" data-cat="+">+ Crea</button>
+          </div>
 
-  <!-- Modale personalizzazione avatar -->
+          <div class="toolbar">
+            <button id="btnFilter" class="btn">Filtra</button>
+            <div class="toolbar-spacer"></div>
+            <button id="btnNewItem" class="btn ghost">Aggiungi capo</button>
+          </div>
+
+          <div id="grid" class="grid">
+            <!-- card capo (render via JS) -->
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- AI -->
+    <section id="view-ai" class="view">
+      <h2>Consigli AI</h2>
+      <p>Qui compariranno suggerimenti dinamici (meteo + occasioni) e outfit proposti.</p>
+      <ul id="aiList" class="list"></ul>
+    </section>
+
+    <!-- CALENDARIO -->
+    <section id="view-cal" class="view">
+      <h2>Calendario</h2>
+      <p>Collega eventi e prepara outfit per data/occasione.</p>
+    </section>
+
+    <!-- IMPOSTAZIONI -->
+    <section id="view-settings" class="view">
+      <h2>Impostazioni</h2>
+      <label class="field">
+        <span>Unità di misura</span>
+        <select id="unitSel">
+          <option value="metric">Metrico (cm, kg)</option>
+          <option value="imperial">Imperiale (in, lb)</option>
+        </select>
+      </label>
+      <label class="field">
+        <span>Città per meteo</span>
+        <input id="cityInput" placeholder="Es. Milano" />
+      </label>
+      <button class="btn" id="btnSaveSettings">Salva</button>
+    </section>
+
+  </main>
+
+  <!-- BOTTOM NAV -->
+  <nav class="tabbar">
+    <button class="tab" data-target="view-ai">✦<span>AI</span></button>
+    <button class="tab active" data-target="view-wardrobe">👗<span>Armadio</span></button>
+    <button class="tab" data-target="view-home">🏠<span>Home</span></button>
+    <button class="tab" data-target="view-cal">📅<span>Calendario</span></button>
+    <button class="tab" data-target="view-settings">⚙️<span>Impostazioni</span></button>
+  </nav>
+
+  <!-- Modale avatar (placeholder 2D – Step A) -->
   <dialog id="avatarModal" class="modal">
-    <form method="dialog" class="modal-content" id="avatarForm">
-      <header class="modal-header">
-        <span class="icon">⚙️</span>
-        <h3>Personalizza avatar</h3>
-        <button type="button" class="close" id="closeModal" aria-label="Chiudi">✕</button>
-      </header>
-
-      <div class="fields">
-        <label>
-          Altezza (cm)
-          <input inputmode="numeric" pattern="[0-9]*" id="heightInput" placeholder="es. 168" />
-        </label>
-        <label>
-          Peso (kg)
-          <input inputmode="numeric" pattern="[0-9]*" id="weightInput" placeholder="es. 58" />
-        </label>
-        <label class="span2">
-          Forma
-          <select id="shapeSelect">
-            <option value="">Seleziona…</option>
-            <option value="dritta">Dritta</option>
-            <option value="clessidra">Clessidra</option>
-            <option value="pera">Pera</option>
-            <option value="mela">Mela</option>
-          </select>
-        </label>
+    <form method="dialog" class="modal-body">
+      <h3>Personalizza avatar</h3>
+      <div class="fields-2">
+        <label class="field"><span>Altezza (cm)</span><input id="heightInput" type="number" inputmode="numeric" /></label>
+        <label class="field"><span>Peso (kg)</span><input id="weightInput" type="number" inputmode="numeric" /></label>
       </div>
-
-      <div class="avatar-mini-wrap">
-        <canvas id="miniAvatar" width="80" height="120" aria-hidden="true"></canvas>
-      </div>
-
-      <footer class="modal-actions">
-        <button type="submit" class="btn-primary">Salva</button>
-      </footer>
+      <label class="field">
+        <span>Forma</span>
+        <select id="shapeSel">
+          <option value="diritta">Dritta</option>
+          <option value="clessidra">Clessidra</option>
+          <option value="pera">Pera</option>
+          <option value="mela">Mela</option>
+        </select>
+      </label>
+      <menu class="modal-actions">
+        <button class="btn ghost" value="cancel">Annulla</button>
+        <button class="btn" value="ok">Salva</button>
+      </menu>
     </form>
   </dialog>
 
-  <script src="app.js?v=3" type="module"></script>
+  <script src="app.js"></script>
 </body>
 </html>
