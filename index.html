@@ -1,133 +1,65 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Avatly</title>
+
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Italiana&display=swap" rel="stylesheet">
+
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#6A2C3E" />
 </head>
 <body>
+  <div id="app" class="home">
+    <!-- Chips top -->
+    <button class="chip chip-left" id="btnAvatar" aria-label="Personalizza avatar">
+      <!-- icona utente -->
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.14-8 4.78A1.22 1.22 0 0 0 5.22 20h13.56A1.22 1.22 0 0 0 20 18.78C20 16.14 16.42 14 12 14Z"/></svg>
+    </button>
 
-  <!-- Toast consigli/meteo -->
-  <div id="toast" class="toast" aria-live="polite"></div>
-  <button id="weatherChip" class="weather-chip" title="Meteo"><span>22°</span></button>
+    <button class="chip chip-right" id="chipWeather" aria-label="Meteo">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a4 4 0 1 1 1.85-7.54A6 6 0 1 1 18 15Z"/></svg>
+      <span id="temp">22°</span>
+    </button>
 
-  <!-- CONTENUTO -->
-  <main id="app">
+    <!-- Avatar 3D (segnaposto immagine PNG/WEBP con trasparenza) -->
+    <div class="avatar-wrap">
+      <img id="avatar3d" src="assets/avatar.png" alt="Avatar" />
+    </div>
 
-    <!-- HOME (splash semplice) -->
-    <section id="view-home" class="view visible">
-      <h1 class="brand">Avatly</h1>
-      <p class="lead">Organizza il tuo guardaroba, crea outfit e lascia che l’AI ti consigli cosa indossare.</p>
-    </section>
-
-    <!-- ARMADIO: manichino + categorie + griglia -->
-    <section id="view-wardrobe" class="view">
-      <div class="wardrobe-layout">
-        <!-- colonna sinistra: avatar/manichino -->
-        <aside class="avatar-panel">
-          <div class="avatar-stage">
-            <div class="avatar-stick" aria-label="avatar"></div>
-          </div>
-          <div class="avatar-actions">
-            <button class="btn ghost" id="btnAvatar">Personalizza avatar</button>
-          </div>
-        </aside>
-
-        <!-- colonna destra: categorie + filtro + griglia capi -->
-        <section class="catalog-panel">
-          <div class="cat-scroll" id="catScroll">
-            <!-- chip categorie (scroll orizzontale) -->
-            <button class="chip active" data-cat="tutti">Tutti</button>
-            <button class="chip" data-cat="top">Top</button>
-            <button class="chip" data-cat="pantaloni">Pantaloni</button>
-            <button class="chip" data-cat="gonne">Gonne</button>
-            <button class="chip" data-cat="vestiti">Vestiti</button>
-            <button class="chip" data-cat="scarpe">Scarpe</button>
-            <button class="chip" data-cat="borse">Borse</button>
-            <button class="chip" data-cat="accessori">Accessori</button>
-            <button class="chip" data-cat="+">+ Crea</button>
-          </div>
-
-          <div class="toolbar">
-            <button id="btnFilter" class="btn">Filtra</button>
-            <div class="toolbar-spacer"></div>
-            <button id="btnNewItem" class="btn ghost">Aggiungi capo</button>
-          </div>
-
-          <div id="grid" class="grid">
-            <!-- card capo (render via JS) -->
-          </div>
-        </section>
-      </div>
-    </section>
-
-    <!-- AI -->
-    <section id="view-ai" class="view">
-      <h2>Consigli AI</h2>
-      <p>Qui compariranno suggerimenti dinamici (meteo + occasioni) e outfit proposti.</p>
-      <ul id="aiList" class="list"></ul>
-    </section>
-
-    <!-- CALENDARIO -->
-    <section id="view-cal" class="view">
-      <h2>Calendario</h2>
-      <p>Collega eventi e prepara outfit per data/occasione.</p>
-    </section>
-
-    <!-- IMPOSTAZIONI -->
-    <section id="view-settings" class="view">
-      <h2>Impostazioni</h2>
-      <label class="field">
-        <span>Unità di misura</span>
-        <select id="unitSel">
-          <option value="metric">Metrico (cm, kg)</option>
-          <option value="imperial">Imperiale (in, lb)</option>
-        </select>
-      </label>
-      <label class="field">
-        <span>Città per meteo</span>
-        <input id="cityInput" placeholder="Es. Milano" />
-      </label>
-      <button class="btn" id="btnSaveSettings">Salva</button>
-    </section>
-
-  </main>
-
-  <!-- BOTTOM NAV -->
-  <nav class="tabbar">
-    <button class="tab" data-target="view-ai">✦<span>AI</span></button>
-    <button class="tab active" data-target="view-wardrobe">👗<span>Armadio</span></button>
-    <button class="tab" data-target="view-home">🏠<span>Home</span></button>
-    <button class="tab" data-target="view-cal">📅<span>Calendario</span></button>
-    <button class="tab" data-target="view-settings">⚙️<span>Impostazioni</span></button>
-  </nav>
-
-  <!-- Modale avatar (placeholder 2D – Step A) -->
-  <dialog id="avatarModal" class="modal">
-    <form method="dialog" class="modal-body">
-      <h3>Personalizza avatar</h3>
-      <div class="fields-2">
-        <label class="field"><span>Altezza (cm)</span><input id="heightInput" type="number" inputmode="numeric" /></label>
-        <label class="field"><span>Peso (kg)</span><input id="weightInput" type="number" inputmode="numeric" /></label>
-      </div>
-      <label class="field">
-        <span>Forma</span>
-        <select id="shapeSel">
-          <option value="diritta">Dritta</option>
-          <option value="clessidra">Clessidra</option>
-          <option value="pera">Pera</option>
-          <option value="mela">Mela</option>
-        </select>
-      </label>
-      <menu class="modal-actions">
-        <button class="btn ghost" value="cancel">Annulla</button>
-        <button class="btn" value="ok">Salva</button>
-      </menu>
-    </form>
-  </dialog>
+    <!-- Bottom nav -->
+    <nav class="tabbar" role="navigation" aria-label="Navigazione principale">
+      <button class="tab" data-tab="camera" aria-label="Fotocamera">
+        <svg viewBox="0 0 24 24"><path d="M9 4l2-2h2l2 2h4v16H3V4h6Zm3 3.5A5.5 5.5 0 1 0 17.5 13 5.5 5.5 0 0 0 12 7.5Zm0 2A3.5 3.5 0 1 1 8.5 13 3.5 3.5 0 0 1 12 9.5Z"/></svg>
+        <span>AI</span>
+      </button>
+      <button class="tab" data-tab="closet" aria-label="Armadio">
+        <svg viewBox="0 0 24 24"><path d="M6 3h12v18H6Zm2 2v14m8-14v14"/></svg>
+        <span>Armadio</span>
+      </button>
+      <button class="tab active" data-tab="home" aria-label="Home">
+        <svg viewBox="0 0 24 24"><path d="M3 10l9-7 9 7v10H3Z"/></svg>
+        <span>Home</span>
+      </button>
+      <button class="tab" data-tab="calendar" aria-label="Calendario">
+        <svg viewBox="0 0 24 24"><path d="M7 2v3m10-3v3M3 9h18v12H3Z"/></svg>
+        <span>Calendario</span>
+      </button>
+      <button class="tab" data-tab="settings" aria-label="Impostazioni">
+        <svg viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 1-4 4 4 4 0 0 1 4-4Zm9 4-2.12.35a7.9 7.9 0 0 1-.73 1.76l1.27 1.73-2.12 2.12-1.73-1.27a7.9 7.9 0 0 1-1.76.73L14 21h-4l-.35-2.12a7.9 7.9 0 0 1-1.76-.73l-1.73 1.27-2.12-2.12 1.27-1.73a7.9 7.9 0 0 1-.73-1.76L3 12l2.12-.35a7.9 7.9 0 0 1 .73-1.76L4.58 8.16 6.7 6.04l1.73 1.27a7.9 7.9 0 0 1 1.76-.73L10 4h4l.35 2.12a7.9 7.9 0 0 1 1.76.73L17.84 5.6l2.12 2.12-1.27 1.73a7.9 7.9 0 0 1 .73 1.76Z"/></svg>
+        <span>Impostazioni</span>
+      </button>
+    </nav>
+  </div>
 
   <script src="app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js');
+    }
+  </script>
 </body>
 </html>
