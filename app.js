@@ -1,42 +1,82 @@
-// Avatly – Home wire-up
+// ---------- Splash ----------
+const splash = document.getElementById('splash');
+setTimeout(()=> splash.classList.add('hidden-splash'), 900);
+setTimeout(()=> splash.style.display='none', 1600);
 
-// 1) Avatar edit (apre un placeholder, poi ci metteremo il pannello 3D)
-document.getElementById('btnAvatar').addEventListener('click', () => {
-  alert('Qui potrai personalizzare avatar: connotati, altezza, peso, forma. (WIP)');
-});
-
-// 2) Meteo (placeholder locale salvato)
+// ---------- Meteo (placeholder) ----------
 (function initWeather(){
   const chip = document.getElementById('chipWeather');
+  if (!chip) return;
   const tempEl = document.getElementById('temp');
-  // Recupera temperatura fittizia da localStorage o imposta 22°
   let t = localStorage.getItem('avatly.temp');
   if(!t){ t = '22'; localStorage.setItem('avatly.temp', t); }
   tempEl.textContent = `${t}°`;
   chip.addEventListener('click', ()=>{
     const v = prompt('Imposta temperatura attuale (°C):', t);
     if(v!==null && v.trim()!==''){
-      t = parseInt(v,10);
-      if(!Number.isNaN(t)){
-        localStorage.setItem('avatly.temp', t);
+      const n = parseInt(v,10);
+      if(!Number.isNaN(n)){
+        t = n; localStorage.setItem('avatly.temp', t);
         tempEl.textContent = `${t}°`;
       }
     }
   });
 })();
 
-// 3) Tab bar (navigazione fittizia per ora)
+// ---------- Tabbar / Navigazione semplice ----------
+const screens = document.querySelectorAll('.screen');
+function show(screenName){
+  screens.forEach(s => s.classList.toggle('active', s.dataset.screen === screenName));
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === screenName));
+}
 document.querySelectorAll('.tab').forEach(btn=>{
   btn.addEventListener('click', ()=>{
-    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
     const tab = btn.dataset.tab;
-    switch(tab){
-      case 'camera': alert('Fotocamera: scatta e ritaglia i capi (WIP)'); break;
-      case 'closet': alert('Armadio: categorie e filtri (WIP)'); break;
-      case 'home': /* già qui */ break;
-      case 'calendar': alert('Calendario outfit (WIP)'); break;
-      case 'settings': alert('Impostazioni: lingua, backup, profilo (WIP)'); break;
-    }
+    if(tab==='camera'){ alert('Fotocamera: scatta e ritaglia i capi (WIP)'); return;}
+    show(tab==='home'?'home':tab);
   });
+});
+
+// ---------- Modal Avatar ----------
+const modal = document.getElementById('modal');
+const openBtn = document.getElementById('btnAvatar');
+const closeBtn = document.getElementById('modalClose');
+const cancelBtn = document.getElementById('modalCancel');
+const form = document.getElementById('avatarForm');
+const inpH = document.getElementById('inpH');
+const inpW = document.getElementById('inpW');
+const inpShape = document.getElementById('inpShape');
+
+// carica valori salvati
+(function loadAvatarPrefs(){
+  const st = JSON.parse(localStorage.getItem('avatly.avatar')||'{}');
+  if(st.h) inpH.value = st.h;
+  if(st.w) inpW.value = st.w;
+  if(st.shape) inpShape.value = st.shape;
+})();
+
+function openModal(){
+  modal.classList.add('show');
+  modal.setAttribute('aria-hidden','false');
+}
+function closeModal(){
+  modal.classList.remove('show');
+  modal.setAttribute('aria-hidden','true');
+}
+
+openBtn.addEventListener('click', openModal);
+closeBtn.addEventListener('click', closeModal);
+cancelBtn.addEventListener('click', closeModal);
+modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+
+form.addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const data = {
+    h: inpH.value.trim(),
+    w: inpW.value.trim(),
+    shape: inpShape.value
+  };
+  localStorage.setItem('avatly.avatar', JSON.stringify(data));
+  closeModal();
+  alert('Avatar aggiornato! (quando passeremo al 3D useremo questi dati per il corpo)');
 });
