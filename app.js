@@ -1,72 +1,105 @@
-// Avatly – Step A: Avatar 3D base + bottom bar
-// Storage helper
-const $  = s => document.querySelector(s);
-const $$ = s => document.querySelectorAll(s);
-const db = {
-  avatar: JSON.parse(localStorage.getItem('av_avatar')||'{}')
-};
-function save(k){ localStorage.setItem('av_'+k, JSON.stringify(db[k])); }
+// ======================================================================
+// AVATLY App JS (client-side, no backend) — v3
+// ======================================================================
 
-// --------------- Bottom bar (solo evidenziazione) ---------------
-$$('.tab').forEach(b=>{
-  b.addEventListener('click', ()=>{
-    $$('.tab').forEach(x=>x.classList.remove('active'));
-    b.classList.add('active');
-    // Qui in futuro apriremo le sezioni AI / Armadio / Calendario / Impostazioni
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+
+const db = {
+  settings: JSON.parse(localStorage.getItem('av_settings')) || {
+    profileName: 'Avatly', unit: 'metric', city: '', lat: null, lon: null,
+    height: '', weight: '', shape: ''
+  }
+};
+const save = () => localStorage.setItem('av_settings', JSON.stringify(db.settings));
+
+// -------------------------- UI references
+const weatherPill = $('#weatherPill');
+const aiToast = $('#aiToast');
+const avatarCanvas = $('#avatarCanvas');
+const ctx = avatarCanvas.getContext('2d');
+
+const avatarModal = $('#avatarModal');
+const heightInput = $('#heightInput');
+const weightInput = $('#weightInput');
+const shapeSelect = $('#shapeSelect');
+const miniCanvas = $('#miniAvatar');
+const miniCtx = miniCanvas.getContext('2d');
+
+// -------------------------- Basic nav highlight
+$$('.bottom-nav .tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    $$('.bottom-nav .tab').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    // (per ora la Home è l’unica “vista”; in futuro qui cambiamo pannelli)
   });
 });
 
-// --------------- Avatar 3D: binding & scala ---------------
-const av3d = $('#av3d');
-function loadAvatarPrefs(){
-  const a = db.avatar || {};
-  $('#avHeight').value = a.height ?? '';
-  $('#avWeight').value = a.weight ?? '';
-  $('#avShape').value  = a.shape ?? 'dritta';
-  $('#avScaleX').value = a.scaleX ?? 1;
-  $('#avScaleY').value = a.scaleY ?? 1;
-  applyAvatarScale();
+// -------------------------- Meteo “placeholder”
+(function initWeather(){
+  // Finto meteo solo estetico (22°)
+  $('#weatherTemp').textContent = '22°';
+})();
+
+// -------------------------- AI toast demo
+function showSuggestion(text){
+  aiToast.textContent = text;
+  aiToast.hidden = false;
+  setTimeout(()=> aiToast.hidden = true, 4500);
 }
-function applyAvatarScale(){
-  if(!av3d) return;
-  const sx = parseFloat($('#avScaleX').value || 1);
-  const sy = parseFloat($('#avScaleY').value || 1);
-  av3d.style.transformOrigin = '50% 85%';
-  av3d.style.transform = `scale(${sx},${sy})`;
+// Mostra un messaggino iniziale
+showSuggestion("Oggi c’è il sole: prova jeans + t-shirt + sneakers!");
+
+// -------------------------- Avatar placeholder (2D semplificato)
+function drawAvatar2D(c2d, w, h, color='#F9CED8'){
+  c2d.clearRect(0,0,w,h);
+  c2d.fillStyle = color;
+  // testa
+  c2d.beginPath();
+  c2d.arc(w/2, h*0.28, 30, 0, Math.PI*2);
+  c2d.fill();
+  // busto
+  c2d.fillRect(w/2 - 18, h*0.35, 36, 85);
+  // gambe
+  c2d.fillRect(w/2 - 12, h*0.35+85, 10, 90);
+  c2d.fillRect(w/2 + 2,  h*0.35+85, 10, 90);
 }
 
-// Fallback se manca assets/avatar.glb
-av3d?.addEventListener('error', ()=>{
-  $('#av3d').outerHTML = `<div style="display:grid;place-items:center;height:100%;color:#FDECF2;opacity:.85">
-    Carica <code>assets/avatar.glb</code> per attivare l'avatar 3D
-  </div>`;
-});
+// Disegna nei due canvas
+function renderAvatars(){
+  drawAvatar2D(ctx, avatarCanvas.width, avatarCanvas.height, '#F5C3D1');
+  drawAvatar2D(miniCtx, miniCanvas.width, miniCanvas.height, '#5A1F2A'); // scuro dentro la modale
+}
+renderAvatars();
 
-// --------------- Modale ---------------
-const modal = $('#avatarModal');
-$('#openAvatar').addEventListener('click', ()=>{ loadAvatarPrefs(); modal.classList.add('open'); });
-$('#avCancel').addEventListener('click', ()=> modal.classList.remove('open'));
-modal.addEventListener('click', e=>{ if(e.target===modal) modal.classList.remove('open'); });
+// -------------------------- Modal open/close + bind
+$('#avatarFab').addEventListener('click', openModal);
+$('.hint .icon')?.addEventListener('click', openModal);
+$('#closeModal').addEventListener('click', ()=> avatarModal.close());
+$('#avatarForm').addEventListener('submit', onSaveAvatar);
 
-$('#avSave').addEventListener('click', ()=>{
-  db.avatar = {
-    height: parseInt($('#avHeight').value||0,10) || null,
-    weight: parseInt($('#avWeight').value||0,10) || null,
-    shape: $('#avShape').value || 'dritta',
-    scaleX: parseFloat($('#avScaleX').value||1),
-    scaleY: parseFloat($('#avScaleY').value||1),
-  };
-  save('avatar');
-  applyAvatarScale();
-  modal.classList.remove('open');
-});
-$('#avScaleX').addEventListener('input', applyAvatarScale);
-$('#avScaleY').addEventListener('input', applyAvatarScale);
+function openModal(){
+  // Precarico valori
+  heightInput.value = db.settings.height || '';
+  weightInput.value = db.settings.weight || '';
+  shapeSelect.value = db.settings.shape || '';
+  renderAvatars();
+  avatarModal.showModal();
+}
 
-// --------------- Meteo (placeholder) ---------------
-$('#weatherBtn').addEventListener('click', ()=>{
-  alert('Suggerimento AI: oggi potrebbe piovere. Prova jeans + stivaletti + trench!');
-});
+function onSaveAvatar(ev){
+  ev.preventDefault();
+  db.settings.height = heightInput.value.trim();
+  db.settings.weight = weightInput.value.trim();
+  db.settings.shape  = shapeSelect.value;
+  save();
+  avatarModal.close();
+  showSuggestion('Avatar aggiornato ✅');
+}
 
-// Init
-applyAvatarScale();
+// -------------------------- Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./service-worker.js?v=9').catch(()=>{});
+  });
+}
