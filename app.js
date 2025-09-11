@@ -1,105 +1,169 @@
-// ======================================================================
-// AVATLY App JS (client-side, no backend) — v3
-// ======================================================================
+// Avatly – base SPA + Armadio a due pannelli
 
-const $ = (s, el=document) => el.querySelector(s);
-const $$ = (s, el=document) => [...el.querySelectorAll(s)];
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 
+// Stato locale molto semplice
 const db = {
-  settings: JSON.parse(localStorage.getItem('av_settings')) || {
-    profileName: 'Avatly', unit: 'metric', city: '', lat: null, lon: null,
-    height: '', weight: '', shape: ''
-  }
+  settings: JSON.parse(localStorage.getItem('av_settings') || '{"unit":"metric","city":""}'),
+  items: JSON.parse(localStorage.getItem('av_items') || '[]'),
+  avatar: JSON.parse(localStorage.getItem('av_avatar') || '{"height":165,"weight":60,"shape":"diritta"}'),
 };
-const save = () => localStorage.setItem('av_settings', JSON.stringify(db.settings));
 
-// -------------------------- UI references
-const weatherPill = $('#weatherPill');
-const aiToast = $('#aiToast');
-const avatarCanvas = $('#avatarCanvas');
-const ctx = avatarCanvas.getContext('2d');
+// --- Helpers persistenza
+const save = (k) => localStorage.setItem('av_'+k, JSON.stringify(db[k]));
 
-const avatarModal = $('#avatarModal');
-const heightInput = $('#heightInput');
-const weightInput = $('#weightInput');
-const shapeSelect = $('#shapeSelect');
-const miniCanvas = $('#miniAvatar');
-const miniCtx = miniCanvas.getContext('2d');
+// --- UI comuni
+function showToast(text, ms=3000){
+  const t = $('#toast');
+  t.textContent = text;
+  t.style.display = 'block';
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.style.display='none', ms);
+}
 
-// -------------------------- Basic nav highlight
-$$('.bottom-nav .tab').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    $$('.bottom-nav .tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    // (per ora la Home è l’unica “vista”; in futuro qui cambiamo pannelli)
+// Meteo (mock locale)
+function initWeather(){
+  // Qui in futuro: fetch reale; ora placeholder
+  $('#weatherChip span').textContent = '22°';
+  // Messaggino iniziale
+  showToast('Oggi c’è il sole: prova jeans + t-shirt + sneakers!');
+}
+
+// Tabs
+function initTabs(){
+  $$('.tab').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      $$('.tab').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      const id = btn.dataset.target;
+      $$('.view').forEach(v=>v.classList.remove('visible'));
+      $('#'+id).classList.add('visible');
+    });
   });
-});
-
-// -------------------------- Meteo “placeholder”
-(function initWeather(){
-  // Finto meteo solo estetico (22°)
-  $('#weatherTemp').textContent = '22°';
-})();
-
-// -------------------------- AI toast demo
-function showSuggestion(text){
-  aiToast.textContent = text;
-  aiToast.hidden = false;
-  setTimeout(()=> aiToast.hidden = true, 4500);
-}
-// Mostra un messaggino iniziale
-showSuggestion("Oggi c’è il sole: prova jeans + t-shirt + sneakers!");
-
-// -------------------------- Avatar placeholder (2D semplificato)
-function drawAvatar2D(c2d, w, h, color='#F9CED8'){
-  c2d.clearRect(0,0,w,h);
-  c2d.fillStyle = color;
-  // testa
-  c2d.beginPath();
-  c2d.arc(w/2, h*0.28, 30, 0, Math.PI*2);
-  c2d.fill();
-  // busto
-  c2d.fillRect(w/2 - 18, h*0.35, 36, 85);
-  // gambe
-  c2d.fillRect(w/2 - 12, h*0.35+85, 10, 90);
-  c2d.fillRect(w/2 + 2,  h*0.35+85, 10, 90);
+  // partenza su Armadio
+  document.querySelector('.tab[data-target="view-wardrobe"]').click();
 }
 
-// Disegna nei due canvas
-function renderAvatars(){
-  drawAvatar2D(ctx, avatarCanvas.width, avatarCanvas.height, '#F5C3D1');
-  drawAvatar2D(miniCtx, miniCanvas.width, miniCanvas.height, '#5A1F2A'); // scuro dentro la modale
+// -------- ARMADIO --------
+
+// Dati demo (immagini emoji/placeholder)
+const demoItems = [
+  {id:1, name:'T-shirt bianca', cat:'top', emoji:'👕'},
+  {id:2, name:'Jeans blu', cat:'pantaloni', emoji:'👖'},
+  {id:3, name:'Gonna midi', cat:'gonne', emoji:'🩳'},
+  {id:4, name:'Vestito nero', cat:'vestiti', emoji:'👗'},
+  {id:5, name:'Stivali', cat:'scarpe', emoji:'👢'},
+  {id:6, name:'Borsa a tracolla', cat:'borse', emoji:'👜'},
+  {id:7, name:'Cintura', cat:'accessori', emoji:'🧣'},
+];
+if (db.items.length === 0){ db.items = demoItems; save('items'); }
+
+function renderGrid(filter='tutti'){
+  const grid = $('#grid'); grid.innerHTML = '';
+  const items = db.items.filter(it => filter==='tutti' ? true : it.cat===filter);
+  if(items.length===0){
+    grid.innerHTML = `<p style="opacity:.8">Nessun capo in <b>${filter}</b>…</p>`;
+    return;
+  }
+  for (const it of items){
+    const card = document.createElement('article');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="img" aria-label="${it.name}">${it.emoji ?? '👚'}</div>
+      <div class="meta">
+        <div>
+          <div>${it.name}</div>
+          <div class="badge">${it.cat}</div>
+        </div>
+        <button class="btn ghost" data-id="${it.id}">Dettagli</button>
+      </div>
+    `;
+    grid.appendChild(card);
+  }
 }
-renderAvatars();
 
-// -------------------------- Modal open/close + bind
-$('#avatarFab').addEventListener('click', openModal);
-$('.hint .icon')?.addEventListener('click', openModal);
-$('#closeModal').addEventListener('click', ()=> avatarModal.close());
-$('#avatarForm').addEventListener('submit', onSaveAvatar);
-
-function openModal(){
-  // Precarico valori
-  heightInput.value = db.settings.height || '';
-  weightInput.value = db.settings.weight || '';
-  shapeSelect.value = db.settings.shape || '';
-  renderAvatars();
-  avatarModal.showModal();
-}
-
-function onSaveAvatar(ev){
-  ev.preventDefault();
-  db.settings.height = heightInput.value.trim();
-  db.settings.weight = weightInput.value.trim();
-  db.settings.shape  = shapeSelect.value;
-  save();
-  avatarModal.close();
-  showSuggestion('Avatar aggiornato ✅');
-}
-
-// -------------------------- Service Worker
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js?v=9').catch(()=>{});
+function initCategories(){
+  $('#catScroll').addEventListener('click', (e)=>{
+    const b = e.target.closest('.chip'); if(!b) return;
+    if(b.dataset.cat === '+'){
+      const name = prompt('Nome nuova categoria:');
+      if(name){
+        const btn = document.createElement('button');
+        btn.className='chip';
+        btn.dataset.cat = name.toLowerCase();
+        btn.textContent = name;
+        $('#catScroll').insertBefore(btn, $('#catScroll').lastElementChild);
+      }
+      return;
+    }
+    $$('#catScroll .chip').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderGrid(b.dataset.cat);
   });
 }
+
+// Avatar modale (Step A – campi leggibili e centrati)
+function initAvatar(){
+  const dlg = $('#avatarModal');
+  $('#btnAvatar').addEventListener('click', ()=> {
+    $('#heightInput').value = db.avatar.height ?? '';
+    $('#weightInput').value = db.avatar.weight ?? '';
+    $('#shapeSel').value   = db.avatar.shape  ?? 'diritta';
+    dlg.showModal();
+  });
+  dlg.addEventListener('close', ()=>{
+    if(dlg.returnValue==='ok'){
+      db.avatar.height = Number($('#heightInput').value||0);
+      db.avatar.weight = Number($('#weightInput').value||0);
+      db.avatar.shape  = $('#shapeSel').value;
+      save('avatar');
+      showToast('Avatar aggiornato ✅');
+      // (qui potrai collegare il 3D per cambiare corpo/altezza)
+    }
+  });
+}
+
+// Impostazioni
+function initSettings(){
+  $('#unitSel').value = db.settings.unit;
+  $('#cityInput').value = db.settings.city || '';
+  $('#btnSaveSettings').addEventListener('click', ()=>{
+    db.settings.unit = $('#unitSel').value;
+    db.settings.city = $('#cityInput').value.trim();
+    save('settings');
+    showToast('Impostazioni salvate');
+  });
+}
+
+// Aggiungi capo (bozza)
+function initAddItem(){
+  $('#btnNewItem').addEventListener('click', ()=>{
+    const name = prompt('Nome capo?');
+    if(!name) return;
+    const cat = prompt('Categoria (top, pantaloni, gonne, vestiti, scarpe, borse, accessori)?','top') || 'top';
+    db.items.push({id:Date.now(), name, cat, emoji:'👚'});
+    save('items');
+    const active = document.querySelector('#catScroll .chip.active')?.dataset.cat || 'tutti';
+    renderGrid(active);
+  });
+}
+
+// AI demo
+function initAI(){
+  const list = $('#aiList');
+  list.innerHTML = `
+    <li>Per un pranzo informale: jeans + t-shirt bianca + sneakers.</li>
+    <li>Se piove: trench + stivaletti + borsa a tracolla.</li>
+  `;
+}
+
+// Boot
+initTabs();
+initWeather();
+initCategories();
+initAvatar();
+initSettings();
+initAddItem();
+initAI();
+renderGrid('tutti');
