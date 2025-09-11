@@ -1,10 +1,10 @@
-// Avatly SW v0.4
-const CACHE_NAME = 'avatly-v04';
+// Avatly SW v0.5
+const CACHE_NAME = 'avatly-v05';
 const ASSETS = [
   './',
-  './index.html?v=4',
-  './styles.css?v=4',
-  './app.js?v=4',
+  './index.html?v=5',
+  './styles.css?v=5',
+  './app.js?v=5',
   './manifest.webmanifest',
   './icon-192.png',
   './icon-512.png'
