@@ -1,5 +1,5 @@
-// bump cache name per forzare aggiornamento
-const CACHE_NAME='avatly-v02';
+// Avatly PWA cache – bump la versione ad ogni release
+const CACHE_NAME='avatly-v05';
 const ASSETS=[
   './',
   './index.html',
