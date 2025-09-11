@@ -4,33 +4,62 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Avatly</title>
-
-  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Italiana&display=swap" rel="stylesheet">
-
+  <meta name="theme-color" content="#6A2C3E" />
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="stylesheet" href="styles.css" />
-  <meta name="theme-color" content="#6A2C3E" />
 </head>
 <body>
-  <div id="app" class="home">
-    <!-- Chips top -->
-    <button class="chip chip-left" id="btnAvatar" aria-label="Personalizza avatar">
-      <!-- icona utente -->
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.14-8 4.78A1.22 1.22 0 0 0 5.22 20h13.56A1.22 1.22 0 0 0 20 18.78C20 16.14 16.42 14 12 14Z"/></svg>
-    </button>
 
-    <button class="chip chip-right" id="chipWeather" aria-label="Meteo">
-      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a4 4 0 1 1 1.85-7.54A6 6 0 1 1 18 15Z"/></svg>
-      <span id="temp">22°</span>
-    </button>
+  <!-- Splash -->
+  <div id="splash">
+    <h1>Avatly</h1>
+  </div>
 
-    <!-- Avatar 3D (segnaposto immagine PNG/WEBP con trasparenza) -->
-    <div class="avatar-wrap">
-      <img id="avatar3d" src="assets/avatar.png" alt="Avatar" />
-    </div>
+  <!-- APP -->
+  <main id="app">
 
-    <!-- Bottom nav -->
+    <!-- HOME -->
+    <section class="screen screen-home active" data-screen="home">
+      <!-- Chips -->
+      <button class="chip chip-left" id="btnAvatar" aria-label="Personalizza avatar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4Zm0 2c-4.42 0-8 2.14-8 4.78A1.22 1.22 0 0 0 5.22 20h13.56A1.22 1.22 0 0 0 20 18.78C20 16.14 16.42 14 12 14Z"/></svg>
+      </button>
+
+      <button class="chip chip-right" id="chipWeather" aria-label="Meteo">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15a4 4 0 1 1 1.85-7.54A6 6 0 1 1 18 15Z"/></svg>
+        <span id="temp">22°</span>
+      </button>
+
+      <!-- Avatar -->
+      <div class="avatar-wrap">
+        <img id="avatar3d" src="assets/avatar.png" alt="Avatar" />
+      </div>
+    </section>
+
+    <!-- ARMADIO -->
+    <section class="screen" data-screen="closet">
+      <h2>Armadio</h2>
+      <p>(Qui andranno categorie, filtri e capi)</p>
+    </section>
+
+    <!-- CALENDARIO -->
+    <section class="screen" data-screen="calendar">
+      <h2>Calendario</h2>
+      <p>(Pianifica gli outfit della settimana)</p>
+    </section>
+
+    <!-- IMPOSTAZIONI -->
+    <section class="screen" data-screen="settings">
+      <h2>Impostazioni</h2>
+      <ul class="list">
+        <li>Lingua: Italiano</li>
+        <li>Backup/Restore dati (WIP)</li>
+        <li>Nome profilo (WIP)</li>
+      </ul>
+    </section>
+
+    <!-- Bottom bar -->
     <nav class="tabbar" role="navigation" aria-label="Navigazione principale">
       <button class="tab" data-tab="camera" aria-label="Fotocamera">
         <svg viewBox="0 0 24 24"><path d="M9 4l2-2h2l2 2h4v16H3V4h6Zm3 3.5A5.5 5.5 0 1 0 17.5 13 5.5 5.5 0 0 0 12 7.5Zm0 2A3.5 3.5 0 1 1 8.5 13 3.5 3.5 0 0 1 12 9.5Z"/></svg>
@@ -53,6 +82,42 @@
         <span>Impostazioni</span>
       </button>
     </nav>
+  </main>
+
+  <!-- Modal avatar -->
+  <div id="modal" class="hidden" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <header class="modal-head">
+        <h3 id="modalTitle">Personalizza avatar</h3>
+        <button id="modalClose" aria-label="Chiudi">×</button>
+      </header>
+      <form id="avatarForm" class="modal-body">
+        <label>Altezza (cm)
+          <input type="number" inputmode="numeric" id="inpH" placeholder="es. 165" />
+        </label>
+        <label>Peso (kg)
+          <input type="number" inputmode="numeric" id="inpW" placeholder="es. 55" />
+        </label>
+        <label>Forma
+          <select id="inpShape">
+            <option value="">Seleziona…</option>
+            <option>Rettangolo</option>
+            <option>Clessidra</option>
+            <option>Pera</option>
+            <option>Mela</option>
+          </select>
+        </label>
+
+        <div class="avatar-mini">
+          <img src="assets/avatar.png" alt="Anteprima avatar">
+        </div>
+
+        <footer class="modal-foot">
+          <button type="button" id="modalCancel" class="btn ghost">Annulla</button>
+          <button type="submit" class="btn primary">Salva</button>
+        </footer>
+      </form>
+    </div>
   </div>
 
   <script src="app.js"></script>
