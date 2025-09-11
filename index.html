@@ -1,212 +1,108 @@
 <!doctype html>
 <html lang="it">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
-  <title>Avatly – Guardaroba & Outfit</title>
-  <meta name="theme-color" content="#5A2732"/>
-  <link rel="manifest" href="manifest.webmanifest"/>
-  <link rel="stylesheet" href="styles.css"/>
-
-  <!-- Icone per browser / iOS -->
-  <link rel="icon" href="icon-192.png" type="image/png">
-  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Avatly</title>
+  <link rel="manifest" href="manifest.webmanifest?v=4">
+  <link rel="stylesheet" href="styles.css?v=4">
 </head>
 <body>
-  <!-- Splash iniziale: rosa con scritta bordeaux -->
-  <div id="introSplash" class="intro-splash">
-    <div class="intro-logo">Avatly</div>
+  <!-- Splash “Avatly” -->
+  <div id="splash">
+    <h1>Avatly</h1>
   </div>
 
-  <!-- Login / Onboarding -->
-  <section id="splash" class="center full">
-    <div class="logo">Avatly</div>
-    <div class="card login">
-      <h2>Accedi</h2>
-      <button class="btn ghost" id="loginApple"> Continua con Apple (demo)</button>
-      <button class="btn ghost" id="loginGoogle">Continue with Google (demo)</button>
-      <div class="or">oppure</div>
-      <input id="email" placeholder="Email"/>
-      <input id="password" placeholder="Password" type="password"/>
-      <button class="btn primary" id="loginEmail">Accedi</button>
-      <p class="small muted">* Login demo locale. In v1.0 collegheremo Apple/Google reali e salvataggio cloud.</p>
-    </div>
-  </section>
-
-  <!-- Header -->
-  <header class="app-header" id="appHeader" hidden>
-    <div class="brand">Avatly</div>
-    <!-- (tabs nascosti su mobile; la bottom bar è la navigazione principale) -->
-    <nav class="tabs" aria-hidden="true">
-      <button class="tab active" data-tab="outfit">Home</button>
-      <button class="tab" data-tab="avatar">Avatar</button>
-      <button class="tab" data-tab="wardrobe">Guardaroba</button>
-      <button class="tab" data-tab="planner">Calendario</button>
-      <button class="tab" data-tab="armocromia">Armocromia</button>
-      <button class="tab" data-tab="settings">Impostazioni</button>
-    </nav>
-
-    <!-- Bolla meteo -->
-    <div id="wxBubble" class="wx-bubble" hidden>
-      <span id="wxEmoji">☀️</span>
-      <span id="wxTemp">--°</span>
-    </div>
+  <!-- Header: meteo + toast messaggio -->
+  <header class="topbar">
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <button id="weatherBtn" class="weather-bubble" title="Meteo">
+      <span class="wx-emoji">☁️</span><span class="wx-t">--°</span>
+    </button>
   </header>
 
-  <main id="appMain" hidden>
-    <!-- HOME = Outfit AI -->
-    <section id="outfit" class="panel active">
-      <div class="card">
-        <h3>Outfit del giorno</h3>
-        <div id="aiHint" class="muted small">
-          Aggiungi qualche capo e attiva il meteo per consigli più precisi.
+  <!-- Contenuto TAB -->
+  <main>
+    <!-- TAB 3: HOME (centrale) -->
+    <section class="panel active" id="tab-home" role="tabpanel" aria-labelledby="btn-home">
+      <div class="home-wrap">
+        <button class="avatar-edit" id="btnEditAvatar" title="Personalizza avatar">⚙️</button>
+        <div class="avatar-box" id="avatarBox" aria-label="Avatar">
+          <!-- placeholder avatar -->
+          <svg viewBox="0 0 120 200" class="avatar-svg" aria-hidden="true">
+            <circle cx="60" cy="40" r="18" />
+            <rect x="45" y="60" width="30" height="45" rx="6" />
+            <rect x="42" y="105" width="36" height="55" rx="10" />
+          </svg>
         </div>
-        <div class="inline" style="margin:8px 0">
-          <button class="btn" id="useGPS">Usa la mia posizione</button>
-          <input id="cityInput" placeholder="Città (es. Roma, IT)"/>
-          <button class="btn" id="setCity">Imposta</button>
-        </div>
-        <button class="btn primary" id="genOutfitsBtn">Genera 3 outfit</button>
-        <div id="outfitList" class="grid-cards" style="margin-top:10px"></div>
-        <button class="btn" id="exportOutfitBtn">Esporta outfit come immagine</button>
-        <canvas id="exportCanvas" width="1200" height="1400" style="display:none"></canvas>
+        <p class="hint">Tocca ⚙️ per personalizzare</p>
       </div>
     </section>
 
-    <!-- Avatar -->
-    <section id="avatar" class="panel">
-      <div class="card">
-        <h3>Il tuo Avatar</h3>
-        <div class="inline">
-          <div style="flex:1">
-            <label>Altezza (cm)</label>
-            <input id="avatarHeight" type="number" placeholder="es. 165">
-          </div>
-          <div style="flex:1">
-            <label>Peso (kg)</label>
-            <input id="avatarWeight" type="number" placeholder="es. 55">
-          </div>
-        </div>
-        <div class="inline" style="margin-top:10px">
-          <button class="btn primary" id="openAvatarCreator">Crea / Modifica avatar 3D</button>
-          <button class="btn" id="saveAvatarMeasures">Salva misure</button>
-        </div>
-        <div id="avatarPreview" class="avatar-preview muted small" style="margin-top:10px">
-          Nessun avatar salvato.
-        </div>
+    <!-- TAB 1: AI (suggerimenti outfit) -->
+    <section class="panel" id="tab-ai" role="tabpanel" aria-labelledby="btn-ai">
+      <h2 class="panel-title">Suggerimenti AI</h2>
+      <div class="ai-actions">
+        <button id="btnSuggest" class="primary">Genera outfit del giorno</button>
+        <small>Usa meteo + categorie per proporre abbinamenti.</small>
       </div>
+      <ul id="aiList" class="card-list"></ul>
     </section>
 
-    <!-- Guardaroba -->
-    <section id="wardrobe" class="panel">
-      <div class="grid-2">
-        <div class="card">
-          <h3>Aggiungi capo</h3>
-          <label>Categoria</label>
-          <div class="inline">
-            <select id="newCategory"></select>
-            <button class="btn" id="addCatBtn">+ nuova</button>
-          </div>
-          <label>Colore/Dettagli</label>
-          <input id="newColor" placeholder="es. bianca, ricamata"/>
-          <label>Foto (opzionale)</label>
-          <input id="newPhoto" type="file" accept="image/*"/>
-          <button class="btn primary" id="addItemBtn">Aggiungi al guardaroba</button>
-          <p class="small muted">Tieni premuto su un capo per dettagli, modifica, sposta categoria o eliminare.</p>
-        </div>
-
-        <div class="card">
-          <h3>Filtri rapidi</h3>
-          <div class="filters">
-            <aside class="filter-col">
-              <div class="filter-title">Categorie</div>
-              <div id="catList"></div>
-            </aside>
-            <div class="filter-body">
-              <input id="searchTxt" placeholder="Cerca per colore/dettagli"/>
-              <button class="btn" id="clearFilters">Pulisci filtri</button>
-            </div>
-          </div>
-        </div>
+    <!-- TAB 2: ARMADIO (filtri a scorrimento + griglia capi) -->
+    <section class="panel" id="tab-wardrobe" role="tabpanel" aria-labelledby="btn-wardrobe">
+      <h2 class="panel-title">Armadio</h2>
+      <div class="chips" id="chips">
+        <!-- filtri a scorrimento -->
+        <button class="chip active" data-cat="tutti">Tutti</button>
+        <button class="chip" data-cat="top">Top</button>
+        <button class="chip" data-cat="pantaloni">Pantaloni</button>
+        <button class="chip" data-cat="gonne">Gonne</button>
+        <button class="chip" data-cat="scarpe">Scarpe</button>
+        <button class="chip" data-cat="accessori">Accessori</button>
+        <button class="chip" data-cat="palestra">Palestra</button>
+        <button class="chip" data-cat="outerwear">Cappotti</button>
+        <button class="chip add" id="addCat">+ Crea</button>
       </div>
 
-      <div class="card">
-        <h3>Il tuo guardaroba</h3>
-        <div id="itemsGrid" class="grid-cards"></div>
+      <div class="tools-row">
+        <input id="q" class="input" placeholder="Cerca: colore, categoria, note…" />
+        <button id="addItem" class="secondary">+ Aggiungi capo</button>
       </div>
+
+      <ul id="grid" class="grid"></ul>
     </section>
 
-    <!-- Planner -->
-    <section id="planner" class="panel">
-      <div class="card">
-        <h3>Planner settimanale</h3>
-        <div id="planGrid" class="plan-grid"></div>
-        <div class="inline">
-          <button class="btn" id="shareReminders">Esporta su Promemoria (testo)</button>
-        </div>
-      </div>
+    <!-- TAB 4: CALENDARIO -->
+    <section class="panel" id="tab-calendar" role="tabpanel" aria-labelledby="btn-calendar">
+      <h2 class="panel-title">Calendario</h2>
+      <p>Presto: pianifica outfit per eventi o viaggi.</p>
+      <ul id="planList" class="card-list"></ul>
     </section>
 
-    <!-- Armocromia -->
-    <section id="armocromia" class="panel">
-      <div class="card">
-        <h3>Armocromia</h3>
-        <p class="muted">Anteprima: qui salverai la tua palette e i suggerimenti per abbinamenti.</p>
-      </div>
-    </section>
-
-    <!-- Impostazioni -->
-    <section id="settings" class="panel">
-      <div class="card">
-        <h3>Profilo</h3>
-        <label>Nome profilo</label>
-        <input id="profileName" placeholder="Es. Marta"/>
-        <div class="inline" style="margin-top:8px">
-          <button class="btn primary" id="saveProfile">Salva</button>
-          <button class="btn" id="logout">Esci</button>
-        </div>
-      </div>
-      <div class="card">
-        <h3>Backup</h3>
-        <button class="btn" id="exportData">Esporta dati (.json)</button>
-        <input type="file" id="importData" accept="application/json" hidden/>
-        <button class="btn" id="importBtn">Importa dati</button>
-      </div>
-      <div class="card">
-        <h3>Note roadmap</h3>
-        <p class="small muted">Avatar realistico & Try-On AI nella v1.5 (premium).</p>
+    <!-- TAB 5: IMPOSTAZIONI -->
+    <section class="panel" id="tab-settings" role="tabpanel" aria-labelledby="btn-settings">
+      <h2 class="panel-title">Impostazioni</h2>
+      <div class="settings">
+        <label>Nome profilo <input id="profileName" class="input" placeholder="Es. Monelia"/></label>
+        <label>Città (per meteo) <input id="city" class="input" placeholder="Es. Milano"/></label>
+        <button id="saveSettings" class="primary">Salva</button>
+        <hr/>
+        <button id="exportData" class="secondary">Esporta dati</button>
+        <button id="importData" class="secondary">Importa dati</button>
       </div>
     </section>
   </main>
 
-  <!-- Bottom navigation -->
-  <nav class="bottom-nav" id="bottomNav" hidden>
-    <button data-go="outfit" class="bnav active" title="Home">🏠<span>Home</span></button>
-    <button data-go="avatar" class="bnav" title="Avatar">🧍‍♀️<span>Avatar</span></button>
-    <button data-go="wardrobe" class="bnav" title="Guardaroba">👗<span>Vestiti</span></button>
-    <button data-go="planner" class="bnav" title="Calendario">📅<span>Planner</span></button>
-    <button data-go="armocromia" class="bnav" title="Armocromia">🎨<span>Colori</span></button>
-    <button data-go="settings" class="bnav" title="Impostazioni">⚙️<span>Impost.</span></button>
+  <!-- Bottom Navigation (come nello schizzo: 1..5) -->
+  <nav class="bottombar" role="tablist" aria-label="Navigazione">
+    <button class="tab-btn" id="btn-ai" data-tab="tab-ai" role="tab" aria-controls="tab-ai">✨<span>AI</span></button>
+    <button class="tab-btn" id="btn-wardrobe" data-tab="tab-wardrobe" role="tab" aria-controls="tab-wardrobe">👗<span>Armadio</span></button>
+    <button class="tab-btn active" id="btn-home" data-tab="tab-home" role="tab" aria-controls="tab-home">🏠<span>Home</span></button>
+    <button class="tab-btn" id="btn-calendar" data-tab="tab-calendar" role="tab" aria-controls="tab-calendar">🗓️<span>Calendario</span></button>
+    <button class="tab-btn" id="btn-settings" data-tab="tab-settings" role="tab" aria-controls="tab-settings">⚙️<span>Impostazioni</span></button>
   </nav>
 
-  <!-- Toast / mini-messaggi -->
-  <div id="toast" class="toast" hidden></div>
-
-  <!-- Modale Creator Avatar (Ready Player Me) -->
-  <div id="rpmModal" class="modal" style="display:none">
-    <div class="modal-inner">
-      <div class="modal-bar">
-        <strong>Creator Avatar</strong>
-        <button class="icon-btn" id="closeRpm">✕</button>
-      </div>
-      <!-- Demo Hosted Creator Ready Player Me con Frame API -->
-      <iframe id="rpmFrame" allow="camera *; microphone *"
-        src="https://demo.readyplayer.me/avatar?frameApi=true"
-        style="width:100%;height:100%;border:0;border-radius:0 0 14px 14px"></iframe>
-    </div>
-  </div>
-
-  <footer class="app-footer" id="appFooter" hidden>© 2025 Avatly – v0.3</footer>
-  <script src="app.js"></script>
+  <script src="app.js?v=4"></script>
 </body>
 </html>
