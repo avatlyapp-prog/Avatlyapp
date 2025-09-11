@@ -2,196 +2,117 @@
 <html lang="it">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Avatly</title>
-  <link rel="manifest" href="manifest.webmanifest?v=5">
-  <link rel="stylesheet" href="styles.css?v=5">
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/png" sizes="192x192" href="icon-192.png" />
+  <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png" />
+  <link rel="stylesheet" href="styles.css" />
+  <!-- model-viewer (web component 3D) -->
+  <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 </head>
 <body>
-  <!-- Sprite SVG icone -->
-  <svg style="display:none" aria-hidden="true">
-    <symbol id="ic-spark" viewBox="0 0 24 24"><path d="M12 2l1.7 5.2L19 9l-5.3 1.8L12 16l-1.7-5.2L5 9l5.3-1.8L12 2z"/></symbol>
-    <symbol id="ic-dress" viewBox="0 0 24 24"><path d="M8 3h8l-1 3 3 4-3 12H9L6 10l3-4-1-3z"/></symbol>
-    <symbol id="ic-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1v-9z"/></symbol>
-    <symbol id="ic-cal" viewBox="0 0 24 24"><path d="M7 2h2v2h6V2h2v2h3v18H4V4h3V2zm13 8H4v10h16V10z"/></symbol>
-    <symbol id="ic-gear" viewBox="0 0 24 24"><path d="M12 8a4 4 0 100 8 4 4 0 000-8zm9 4a7 7 0 01-.1 1.1l2 1.5-2 3.5-2.3-1a7.3 7.3 0 01-1.9 1.1l-.4 2.4H9.7l-.4-2.4a7.3 7.3 0 01-1.9-1.1l-2.3 1-2-3.5 2-1.5A7 7 0 013 12c0-.4 0-.7.1-1.1l-2-1.5 2-3.5 2.3 1a7.3 7.3 0 011.9-1.1L8 2h8l.4 2.4c.7.3 1.3.6 1.9 1.1l2.3-1 2 3.5-2 1.5c.1.4.1.7.1 1.1z"/></symbol>
-    <symbol id="ic-cloud" viewBox="0 0 24 24"><path d="M6 19h11a4 4 0 100-8 5 5 0 00-9.8 1A3.5 3.5 0 006 19z"/></symbol>
-    <symbol id="ic-plus" viewBox="0 0 24 24"><path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z"/></symbol>
-    <symbol id="ic-photo" viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 13l2.5 3.5 3.5-5 4 6H6z"/><circle cx="9" cy="9" r="1.5"/></symbol>
-    <symbol id="ic-bin" viewBox="0 0 24 24"><path d="M6 7h12l-1 13H7L6 7zm3-3h6l1 2H8l1-2z"/></symbol>
-  </svg>
-
-  <!-- Splash -->
-  <div id="splash"><h1>Avatly</h1></div>
-
-  <!-- Header: meteo + toast -->
   <header class="topbar">
-    <div class="toast" id="toast" aria-live="polite"></div>
-    <button id="weatherBtn" class="weather-bubble" title="Meteo">
-      <svg class="i"><use href="#ic-cloud"/></svg>
-      <span class="wx-t">--°</span>
-    </button>
+    <div class="brand">Avatly</div>
+    <button id="weatherBtn" class="weather-badge" aria-label="Meteo">☁️ 22°</button>
   </header>
 
-  <!-- Contenuti -->
-  <main>
-    <!-- HOME (tab 3) -->
-    <section class="panel active" id="tab-home" role="tabpanel" aria-labelledby="btn-home">
-      <div class="home-wrap">
-        <button class="avatar-edit" id="btnEditAvatar" title="Personalizza avatar">⚙️</button>
-        <div class="avatar-box" aria-label="Avatar">
-          <!-- Avatar SVG dinamico -->
-          <svg id="avatarSvg" viewBox="0 0 120 200" class="avatar-svg" aria-hidden="true"></svg>
-        </div>
-        <p class="hint">Tocca ⚙️ per personalizzare</p>
-      </div>
-    </section>
-
-    <!-- AI (tab 1) -->
-    <section class="panel" id="tab-ai" role="tabpanel" aria-labelledby="btn-ai">
-      <h2 class="panel-title">Suggerimenti AI</h2>
-      <div class="ai-actions">
-        <button id="btnSuggest" class="primary">
-          <svg class="i"><use href="#ic-spark"/></svg> Genera outfit del giorno
-        </button>
-        <small>Usa meteo + categorie per proporre abbinamenti.</small>
-      </div>
-      <ul id="aiList" class="card-list"></ul>
-    </section>
-
-    <!-- ARMADIO (tab 2) -->
-    <section class="panel" id="tab-wardrobe" role="tabpanel" aria-labelledby="btn-wardrobe">
-      <h2 class="panel-title">Armadio</h2>
-      <div class="chips" id="chips">
-        <button class="chip active" data-cat="tutti">Tutti</button>
-        <button class="chip" data-cat="top">Top</button>
-        <button class="chip" data-cat="pantaloni">Pantaloni</button>
-        <button class="chip" data-cat="gonne">Gonne</button>
-        <button class="chip" data-cat="scarpe">Scarpe</button>
-        <button class="chip" data-cat="accessori">Accessori</button>
-        <button class="chip" data-cat="palestra">Palestra</button>
-        <button class="chip" data-cat="outerwear">Cappotti</button>
-        <button class="chip add" id="addCat"><svg class="i"><use href="#ic-plus"/></svg> Crea</button>
+  <main class="page">
+    <!-- HERO + AVATAR 3D -->
+    <section class="hero">
+      <div class="av3d-wrap">
+        <model-viewer id="av3d"
+          src="assets/avatar.glb"
+          ar ar-modes="webxr scene-viewer quick-look"
+          camera-controls
+          disable-zoom
+          environment-image="neutral"
+          exposure="1"
+          shadow-intensity="0.6"
+          style="width:100%;height:100%;background:transparent;">
+        </model-viewer>
       </div>
 
-      <div class="tools-row">
-        <input id="q" class="input" placeholder="Cerca: colore, categoria, note…" />
-        <button id="addItem" class="secondary">
-          <svg class="i"><use href="#ic-photo"/></svg> Aggiungi capo
-        </button>
-      </div>
-
-      <ul id="grid" class="grid"></ul>
-    </section>
-
-    <!-- CALENDARIO (tab 4) -->
-    <section class="panel" id="tab-calendar" role="tabpanel" aria-labelledby="btn-calendar">
-      <h2 class="panel-title">Calendario</h2>
-      <p>Presto: pianifica outfit per eventi o viaggi.</p>
-      <ul id="planList" class="card-list"></ul>
-    </section>
-
-    <!-- IMPOSTAZIONI (tab 5) -->
-    <section class="panel" id="tab-settings" role="tabpanel" aria-labelledby="btn-settings">
-      <h2 class="panel-title">Impostazioni</h2>
-      <div class="settings">
-        <label>Nome profilo <input id="profileName" class="input" placeholder="Es. Monelia"/></label>
-        <label>Città (per meteo) <input id="city" class="input" placeholder="Es. Milano"/></label>
-        <button id="saveSettings" class="primary">Salva</button>
-        <hr/>
-        <button id="exportData" class="secondary">Esporta dati</button>
-        <button id="importData" class="secondary">Importa dati</button>
-      </div>
+      <p class="hint">
+        Tocca <button id="openAvatar" class="link-gear" aria-label="Personalizza">⚙︎</button> per personalizzare
+      </p>
     </section>
   </main>
 
-  <!-- Bottom Navigation -->
-  <nav class="bottombar" role="tablist" aria-label="Navigazione">
-    <button class="tab-btn" id="btn-ai" data-tab="tab-ai" role="tab" aria-controls="tab-ai">
-      <svg class="i"><use href="#ic-spark"/></svg><span>AI</span>
+  <!-- BOTTOM NAV -->
+  <nav class="tabbar" role="navigation" aria-label="Sezioni">
+    <button class="tab" data-tab="ai">
+      <span class="t-ico">✚</span>
+      <span class="t-lbl">AI</span>
     </button>
-    <button class="tab-btn" id="btn-wardrobe" data-tab="tab-wardrobe" role="tab" aria-controls="tab-wardrobe">
-      <svg class="i"><use href="#ic-dress"/></svg><span>Armadio</span>
+    <button class="tab" data-tab="armadio">
+      <span class="t-ico">👗</span>
+      <span class="t-lbl">Armadio</span>
     </button>
-    <button class="tab-btn active" id="btn-home" data-tab="tab-home" role="tab" aria-controls="tab-home">
-      <svg class="i"><use href="#ic-home"/></svg><span>Home</span>
+    <button class="tab active" data-tab="home">
+      <span class="t-ico">🏠</span>
+      <span class="t-lbl">Home</span>
     </button>
-    <button class="tab-btn" id="btn-calendar" data-tab="tab-calendar" role="tab" aria-controls="tab-calendar">
-      <svg class="i"><use href="#ic-cal"/></svg><span>Calendario</span>
+    <button class="tab" data-tab="cal">
+      <span class="t-ico">🗓️</span>
+      <span class="t-lbl">Calendario</span>
     </button>
-    <button class="tab-btn" id="btn-settings" data-tab="tab-settings" role="tab" aria-controls="tab-settings">
-      <svg class="i"><use href="#ic-gear"/></svg><span>Impostazioni</span>
+    <button class="tab" data-tab="imp">
+      <span class="t-ico">⚙️</span>
+      <span class="t-lbl">Impostazioni</span>
     </button>
   </nav>
 
-  <!-- MODAL: Aggiungi capo -->
-  <dialog id="dlgItem" class="modal">
-    <form method="dialog" class="modal-card" id="formItem">
-      <h3><svg class="i"><use href="#ic-photo"/></svg> Nuovo capo</h3>
-      <div class="field">
-        <label>Foto</label>
-        <input type="file" accept="image/*" id="itemPhoto" />
-        <div class="thumb big" id="itemPreview">Anteprima</div>
+  <!-- MODALE: personalizza avatar -->
+  <div id="avatarModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="avTitle">
+    <div class="sheet">
+      <h3 id="avTitle">Personalizza avatar</h3>
+
+      <div class="form-row">
+        <div>
+          <label for="avHeight">Altezza (cm)</label>
+          <input id="avHeight" type="number" inputmode="numeric" placeholder="es. 168">
+        </div>
+        <div>
+          <label for="avWeight">Peso (kg)</label>
+          <input id="avWeight" type="number" inputmode="numeric" placeholder="es. 58">
+        </div>
       </div>
-      <div class="field">
-        <label>Nome</label>
-        <input class="input" id="itemName" placeholder="Es. T-shirt bianca" required />
+
+      <div class="form-row two">
+        <div>
+          <label for="avScaleY">Statura (scala Y)</label>
+          <input id="avScaleY" type="range" min="0.85" max="1.15" step="0.01" value="1">
+        </div>
+        <div>
+          <label for="avScaleX">Robustezza (scala X)</label>
+          <input id="avScaleX" type="range" min="0.85" max="1.15" step="0.01" value="1">
+        </div>
       </div>
-      <div class="cols">
-        <label>Categoria
-          <select id="itemCat" class="input">
-            <option value="top">Top</option>
-            <option value="pantaloni">Pantaloni</option>
-            <option value="gonne">Gonne</option>
-            <option value="scarpe">Scarpe</option>
-            <option value="accessori">Accessori</option>
-            <option value="palestra">Palestra</option>
-            <option value="outerwear">Cappotti</option>
+
+      <div class="form-row one">
+        <div>
+          <label for="avShape">Forma</label>
+          <select id="avShape">
+            <option value="dritta">Dritta</option>
+            <option value="clessidra">Clessidra</option>
+            <option value="pera">Pera</option>
+            <option value="mela">Mela</option>
           </select>
-        </label>
-        <label>Colore
-          <input class="input" id="itemColor" placeholder="Es. bianco" />
-        </label>
+          <div class="helper">
+            Oggi gli slider cambiano la scala del modello (anteprima visiva).  
+            Con un modello 3D avanzato useremo parametri reali (morph targets).
+          </div>
+        </div>
       </div>
-      <label>Note
-        <textarea class="input" id="itemNotes" rows="2" placeholder="Ricamata, oversize…"></textarea>
-      </label>
-      <menu>
-        <button value="cancel" class="secondary">Annulla</button>
-        <button id="btnSaveItem" value="default" class="primary">Salva</button>
-      </menu>
-    </form>
-  </dialog>
 
-  <!-- MODAL: Editor Avatar -->
-  <dialog id="dlgAvatar" class="modal">
-    <form method="dialog" class="modal-card" id="formAvatar">
-      <h3><svg class="i"><use href="#ic-gear"/></svg> Personalizza avatar</h3>
-      <div class="cols">
-        <label>Altezza (cm)
-          <input class="input" id="avHeight" type="number" min="140" max="210" step="1" value="165" />
-        </label>
-        <label>Peso (kg)
-          <input class="input" id="avWeight" type="number" min="40" max="120" step="1" value="60" />
-        </label>
+      <div class="actions">
+        <button class="btn btn-ghost" id="avCancel">Annulla</button>
+        <button class="btn btn-primary" id="avSave">Salva</button>
       </div>
-      <label>Forma
-        <select id="avShape" class="input">
-          <option value="dritta">Dritta</option>
-          <option value="clessidra">Clessidra</option>
-          <option value="pera">Pera</option>
-        </select>
-      </label>
-      <div class="avatar-mini">
-        <svg id="avatarPreview" viewBox="0 0 120 200"></svg>
-      </div>
-      <menu>
-        <button value="cancel" class="secondary">Chiudi</button>
-        <button id="btnAvatarSave" value="default" class="primary">Salva</button>
-      </menu>
-    </form>
-  </dialog>
+    </div>
+  </div>
 
-  <script src="app.js?v=5"></script>
+  <script src="app.js"></script>
 </body>
 </html>
