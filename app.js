@@ -1,82 +1,94 @@
-// ---------- Splash ----------
+/* Avatly basic interactions */
+
 const splash = document.getElementById('splash');
-setTimeout(()=> splash.classList.add('hidden-splash'), 900);
-setTimeout(()=> splash.style.display='none', 1600);
+const app = document.getElementById('app');
 
-// ---------- Meteo (placeholder) ----------
-(function initWeather(){
-  const chip = document.getElementById('chipWeather');
-  if (!chip) return;
-  const tempEl = document.getElementById('temp');
-  let t = localStorage.getItem('avatly.temp');
-  if(!t){ t = '22'; localStorage.setItem('avatly.temp', t); }
-  tempEl.textContent = `${t}°`;
-  chip.addEventListener('click', ()=>{
-    const v = prompt('Imposta temperatura attuale (°C):', t);
-    if(v!==null && v.trim()!==''){
-      const n = parseInt(v,10);
-      if(!Number.isNaN(n)){
-        t = n; localStorage.setItem('avatly.temp', t);
-        tempEl.textContent = `${t}°`;
-      }
-    }
-  });
-})();
-
-// ---------- Tabbar / Navigazione semplice ----------
-const screens = document.querySelectorAll('.screen');
-function show(screenName){
-  screens.forEach(s => s.classList.toggle('active', s.dataset.screen === screenName));
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('active', b.dataset.tab === screenName));
-}
-document.querySelectorAll('.tab').forEach(btn=>{
-  btn.addEventListener('click', ()=>{
-    const tab = btn.dataset.tab;
-    if(tab==='camera'){ alert('Fotocamera: scatta e ritaglia i capi (WIP)'); return;}
-    show(tab==='home'?'home':tab);
-  });
+/* Splash → Home */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    splash.classList.add('hidden');
+    app.classList.remove('hidden');
+  }, 900); // durata splash
 });
 
-// ---------- Modal Avatar ----------
-const modal = document.getElementById('modal');
-const openBtn = document.getElementById('btnAvatar');
-const closeBtn = document.getElementById('modalClose');
-const cancelBtn = document.getElementById('modalCancel');
-const form = document.getElementById('avatarForm');
-const inpH = document.getElementById('inpH');
-const inpW = document.getElementById('inpW');
-const inpShape = document.getElementById('inpShape');
-
-// carica valori salvati
-(function loadAvatarPrefs(){
-  const st = JSON.parse(localStorage.getItem('avatly.avatar')||'{}');
-  if(st.h) inpH.value = st.h;
-  if(st.w) inpW.value = st.w;
-  if(st.shape) inpShape.value = st.shape;
+/* Weather (placeholder) */
+const weatherPill = document.getElementById('weatherPill');
+const weatherTemp = document.getElementById('weatherTemp');
+(function fakeWeather(){
+  // segnaposto: alterna 21–24°
+  const t = 21 + Math.floor(Math.random()*4);
+  weatherTemp.textContent = `${t}°`;
 })();
 
-function openModal(){
-  modal.classList.add('show');
-  modal.setAttribute('aria-hidden','false');
-}
-function closeModal(){
-  modal.classList.remove('show');
-  modal.setAttribute('aria-hidden','true');
-}
+/* Avatar modal */
+const avatarBtn = document.getElementById('btnAvatar');
+const avatarModal = document.getElementById('avatarModal');
+const closeModal = avatarModal.querySelector('.close');
+const saveBtn = document.getElementById('saveAvatar');
 
-openBtn.addEventListener('click', openModal);
-closeBtn.addEventListener('click', closeModal);
-cancelBtn.addEventListener('click', closeModal);
-modal.addEventListener('click', (e)=>{ if(e.target===modal) closeModal(); });
+const heightInput = document.getElementById('heightInput');
+const weightInput = document.getElementById('weightInput');
+const shapeInput  = document.getElementById('shapeInput');
 
-form.addEventListener('submit', (e)=>{
-  e.preventDefault();
+const avatarImg = document.getElementById('avatarImg');
+
+function loadAvatarPrefs(){
+  try{
+    const data = JSON.parse(localStorage.getItem('avatly.avatar')) || {};
+    if(data.h) heightInput.value = data.h;
+    if(data.w) weightInput.value = data.w;
+    if(data.s) shapeInput.value  = data.s;
+  }catch{ /* ignore */ }
+}
+function saveAvatarPrefs(){
   const data = {
-    h: inpH.value.trim(),
-    w: inpW.value.trim(),
-    shape: inpShape.value
+    h: heightInput.value.trim(),
+    w: weightInput.value.trim(),
+    s: shapeInput.value
   };
   localStorage.setItem('avatly.avatar', JSON.stringify(data));
-  closeModal();
-  alert('Avatar aggiornato! (quando passeremo al 3D useremo questi dati per il corpo)');
+}
+
+avatarBtn.addEventListener('click', () => {
+  loadAvatarPrefs();
+  avatarModal.showModal();
 });
+closeModal.addEventListener('click', () => avatarModal.close());
+saveBtn.addEventListener('click', (e) => {
+  e.preventDefault();
+  saveAvatarPrefs();
+  // segnaposto: in futuro qui scaleremo/aggiorneremo il 3D
+  avatarModal.close();
+});
+
+/* Bottom tabs (placeholder actions) */
+document.querySelectorAll('.tab').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+
+    const tab = btn.dataset.tab;
+    switch(tab){
+      case 'home':
+        // non facciamo nulla: è la vista corrente
+        break;
+      case 'camera':
+        alert('📸 Fotocamera: qui aggiungeremo lo scatto e l’upload dei capi.');
+        break;
+      case 'closet':
+        alert('👗 Armadio: qui vedrai categorie e filtri dei capi.');
+        break;
+      case 'calendar':
+        alert('🗓️ Calendario: pianifica gli outfit per i giorni.');
+        break;
+      case 'settings':
+        alert('⚙️ Impostazioni: lingua, account, salvataggio dati…');
+        break;
+    }
+  });
+});
+
+/* PWA service worker (se presente) */
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+}
